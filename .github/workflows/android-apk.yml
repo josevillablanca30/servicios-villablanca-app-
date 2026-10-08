@@ -37,6 +37,12 @@ jobs:
           unzip -l app/build/outputs/apk/debug/app-debug.apk | grep -q 'resources.arsc'
           unzip -l app/build/outputs/apk/debug/app-debug.apk | grep -q 'assets/index.html'
           test -s app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+      - name: Publicar APK compilado para descarga directa
+        uses: actions/upload-artifact@v4
+        with:
+          name: Villablanca-APK-Instalable
+          path: app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
       - uses: reactivecircus/android-emulator-runner@v2
         name: Probar apertura real en emulador
         with:
