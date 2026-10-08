@@ -1,0 +1,7 @@
+<resources>
+  <style name="Theme.Villablanca" parent="android:style/Theme.Material.Light.NoActionBar">
+    <item name="android:statusBarColor">#0B080F</item>
+    <item name="android:navigationBarColor">#0B080F</item>
+    <item name="android:windowLightStatusBar">false</item>
+  </style>
+</resources>

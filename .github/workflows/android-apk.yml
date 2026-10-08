@@ -1,0 +1,58 @@
+name: Compilar y probar Servicios Villablanca Android
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: android-actions/setup-android@v3
+      - name: Preparar Android SDK
+        run: sdkmanager "platforms;android-35" "build-tools;35.0.0"
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Compilar APK debug con Android Gradle Plugin oficial
+        run: gradle :app:assembleDebug --no-daemon --stacktrace
+      - name: Comprobar estructura del APK
+        run: |
+          test -s app/build/outputs/apk/debug/app-debug.apk
+          unzip -l app/build/outputs/apk/debug/app-debug.apk | grep -q 'classes.dex'
+          unzip -l app/build/outputs/apk/debug/app-debug.apk | grep -q 'resources.arsc'
+          unzip -l app/build/outputs/apk/debug/app-debug.apk | grep -q 'assets/index.html'
+          test -s app/src/main/res/mipmap-xxxhdpi/ic_launcher.png
+      - uses: reactivecircus/android-emulator-runner@v2
+        name: Probar apertura real en emulador
+        with:
+          api-level: 30
+          target: google_apis
+          arch: x86_64
+          emulator-boot-timeout: 600
+          disable-animations: true
+          script: |
+            adb install -r app/build/outputs/apk/debug/app-debug.apk
+            adb logcat -c
+            adb shell am start -W -n cl.villablanca.servicios.demo/.MainActivity
+            sleep 12
+            adb shell pidof cl.villablanca.servicios.demo | grep -E '[0-9]+'
+            adb logcat -d -b crash > /tmp/villablanca-crash.log
+            if grep -q 'FATAL EXCEPTION' /tmp/villablanca-crash.log; then cat /tmp/villablanca-crash.log; exit 1; fi
+            adb shell screencap -p /sdcard/villablanca-demo.png
+            adb pull /sdcard/villablanca-demo.png villablanca-demo.png
+      - name: Entregar APK instalable y captura
+        uses: actions/upload-artifact@v4
+        with:
+          name: Villablanca-Android-Probado
+          path: |
+            app/build/outputs/apk/debug/app-debug.apk
+            villablanca-demo.png
+          if-no-files-found: error

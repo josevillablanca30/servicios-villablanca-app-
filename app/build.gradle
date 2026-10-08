@@ -1,0 +1,14 @@
+plugins { id "com.android.application" }
+android {
+    namespace "cl.villablanca.servicios.demo"
+    compileSdk 35
+    defaultConfig {
+        applicationId "cl.villablanca.servicios.demo"
+        minSdk 24
+        targetSdk 35
+        versionCode 3
+        versionName "3.0-demo"
+    }
+    buildTypes { release { minifyEnabled false } }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_17; targetCompatibility JavaVersion.VERSION_17 }
+}
