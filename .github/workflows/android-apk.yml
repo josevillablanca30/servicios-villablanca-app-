@@ -22,6 +22,8 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
       - name: Validate source formatting and Android XML
         run: |
           git diff --check HEAD^
