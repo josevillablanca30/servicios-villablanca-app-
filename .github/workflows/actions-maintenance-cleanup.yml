@@ -1,0 +1,57 @@
+name: Verified Actions cleanup
+on:
+  push:
+    branches: [main]
+    paths: ['.github/workflows/actions-maintenance-cleanup.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+  actions: write
+concurrency:
+  group: actions-maintenance-cleanup
+  cancel-in-progress: false
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const p=context.repo;
+            const candidates=[];
+            const protectedIds=new Set([11586158111]);
+            const before=await github.paginate(github.rest.actions.listArtifactsForRepo,{...p,per_page:100});
+            const caches=await github.paginate(github.rest.actions.getActionsCacheList,{...p,per_page:100});
+            console.log('BEFORE='+JSON.stringify({artifacts:before.map(a=>({id:a.id,name:a.name,size:a.size_in_bytes})),caches}));
+            const deleted=[],skipped=[],cacheDeleted=[];
+            for(const item of candidates){
+             try{
+             const a=before.find(a=>a.id===item.id);
+             if(!a||protectedIds.has(a.id)||a.digest!==item.digest||a.workflow_run.head_sha!==item.sha){skipped.push({id:item.id,reason:'metadata mismatch or absent'});continue;}
+             const siblings=before.filter(b=>protectedIds.has(b.id)&&b.name===a.name&&b.workflow_run.head_branch===item.branch&&!b.expired);
+             if(siblings.length<2){skipped.push({id:item.id,reason:'fewer than two preserved builds'});continue;}
+             const comparison=await github.request('GET /repos/{owner}/{repo}/compare/{basehead}',{...p,basehead:item.sha+'...'+item.branch,per_page:1});
+             if(!['ahead','identical'].includes(comparison.data.status)){skipped.push({id:item.id,reason:'source not reachable from retained branch'});continue;}
+             const run=(await github.rest.actions.getWorkflowRun({...p,run_id:item.run})).data;
+             const path=run.path.split('@')[0];
+             const source=(await github.rest.repos.getContent({...p,path,ref:item.sha})).data;
+             const workflow=Buffer.from(source.content,'base64').toString('utf8');
+             if(!workflow.includes('actions/upload-artifact@')||!workflow.includes(item.name)){skipped.push({id:item.id,reason:'producer not verified'});continue;}
+             await github.rest.actions.deleteArtifact({...p,artifact_id:item.id});
+             deleted.push(item);
+             }catch(e){skipped.push({id:item.id,reason:e.status||e.message});}
+            }
+            for(const c of caches){
+             // Only dependency caches whose keys identify known setup-node/setup-gradle producers.
+             if(!/^(node-cache-|gradle-)/.test(c.key))continue;
+             if(Date.now()-Date.parse(c.last_accessed_at)<24*60*60*1000)continue;
+             try{await github.rest.actions.deleteActionsCacheById({...p,cache_id:c.id});cacheDeleted.push(c);}catch(e){skipped.push({cache:c.id,reason:e.status||e.message});}
+            }
+            const after=await github.paginate(github.rest.actions.listArtifactsForRepo,{...p,per_page:100});
+            const cachesAfter=await github.paginate(github.rest.actions.getActionsCacheList,{...p,per_page:100});
+            const sum=a=>a.filter(x=>!x.expired).reduce((n,x)=>n+x.size_in_bytes,0);
+            const report={beforeBytes:sum(before),afterBytes:sum(after),freedArtifactBytes:sum(before)-sum(after),beforeCacheBytes:sum(caches),afterCacheBytes:sum(cachesAfter),deleted,cacheDeleted,skipped,remainingIds:after.map(a=>a.id)};
+            console.log('MAINTENANCE_REPORT='+JSON.stringify(report));
+            await core.summary.addHeading('Verified Actions cleanup').addCodeBlock(JSON.stringify(report,null,2),'json').write();
+            

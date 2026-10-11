@@ -2,11 +2,38 @@ name: Compilar y probar Servicios Villablanca Android
 
 on:
   workflow_dispatch:
+    inputs:
+      test_emulator:
+        description: Test launch in an Android emulator
+        type: boolean
+        default: true
   push:
     branches: [main]
+    paths: ['app/**', '*.gradle*', 'gradle/**', 'gradle.properties', '.github/workflows/android-apk.yml']
 
+permissions:
+  contents: read
+concurrency:
+  group: servicios-android-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate source formatting and Android XML
+        run: |
+          git diff --check HEAD^
+          python3 - <<'PY'
+          import pathlib, xml.etree.ElementTree as ET
+          for p in pathlib.Path('app/src').rglob('*.xml'):
+              ET.parse(p)
+          assert pathlib.Path('app/src/main/AndroidManifest.xml').is_file()
+          PY
   android:
+    if: github.event_name == 'workflow_dispatch'
+    needs: validate
     runs-on: ubuntu-latest
     timeout-minutes: 45
     steps:
@@ -43,7 +70,9 @@ jobs:
           name: Villablanca-APK-Instalable
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+          retention-days: 7
       - uses: reactivecircus/android-emulator-runner@v2
+        if: inputs.test_emulator
         name: Probar apertura real en emulador
         with:
           api-level: 30
@@ -61,11 +90,11 @@ jobs:
             if grep -q 'FATAL EXCEPTION' /tmp/villablanca-crash.log; then cat /tmp/villablanca-crash.log; exit 1; fi
             adb shell screencap -p /sdcard/villablanca-demo.png
             adb pull /sdcard/villablanca-demo.png villablanca-demo.png
-      - name: Entregar APK instalable y captura
+      - name: Entregar captura del emulador
+        if: inputs.test_emulator
         uses: actions/upload-artifact@v4
         with:
-          name: Villablanca-Android-Probado
-          path: |
-            app/build/outputs/apk/debug/app-debug.apk
-            villablanca-demo.png
+          name: Villablanca-Android-Captura
+          path: villablanca-demo.png
           if-no-files-found: error
+          retention-days: 7
