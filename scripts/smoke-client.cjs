@@ -35,6 +35,7 @@ for(const x of ['planchado','lavado-ropa','doblado','closet']) {
 }
 const click=(action,id)=>handlers.click({target:{closest(){return {disabled:false,dataset:{action,id}}}}});
 const change=(field,value)=>handlers.change({target:{dataset:{field},value,type:'select-one'}});
+click('catalog');
 click('selectService','aseo-hogar');
 assert.match(root.innerHTML,/Ver los 12 productos incluidos/);
 assert.match(root.innerHTML,/Aspirado para personas alérgicas/);
@@ -49,6 +50,7 @@ change('client:day',day);
 assert.match(root.innerHTML,/Mañana · 08:00/);
 assert.doesNotMatch(root.innerHTML,/<option[^>]*>Tarde · 13:00<\/option>/,'6h no caben desde 13h');
 assert.match(root.innerHTML,/24 horas de anticipación/);
+click('catalog');
 click('selectService','auto-city');
 assert.match(root.innerHTML,/Equipo independiente/,'lavado de auto pide otro trabajador');
 click('addCart');
@@ -58,4 +60,46 @@ assert.equal(catalog.services.filter(s=>s.category==='piscinas').length,2,'pisci
 assert.ok(catalog.services.some(s=>s.id==='industrial-cerchas'));
 assert.ok(catalog.services.some(s=>s.id==='industrial-lineas'));
 assert.equal(alerts.length,0);
-console.log('OK: extras suman horas de la misma trabajadora; automóvil es trabajo paralelo; catálogo, kit, tarifas y agenda.');
+
+/*
+ * Regresión de la piscina fantasma: antes TODOS los pedidos se creaban
+ * internamente con poolType:'Enterrada' y el resumen lo imprimía.
+ * Simular la navegación real de cada tipo de servicio y el doble toque móvil.
+ */
+function simulateBooking(serviceId) {
+ const delegated={}, node={innerHTML:'',addEventListener(type,fn){delegated[type]=fn;}};
+ const appWindow={scrollTo(){},addEventListener(){}};
+ const appDocument={getElementById(){return node},querySelector(){return null}};
+ const sandbox={window:appWindow,document:appDocument,navigator:{},location:{protocol:'file:',hostname:''},alert(){throw Error('Alerta inesperada')},Intl,Date,structuredClone,console,URL,encodeURIComponent};
+ vm.createContext(sandbox);
+ scripts.forEach((sc,i)=>new vm.Script(sc,{filename:'smoke-scenario-'+i+'.js'}).runInContext(sandbox));
+ const push=(action,id)=>delegated.click({target:{closest(){return {disabled:false,dataset:{action,id}}}}});
+ push('catalog');
+ push('selectService',serviceId);
+ assert.match(node.innerHTML,/Hazlo/,serviceId+' muestra configurador');
+ push('addCart');
+ const first=node.innerHTML;
+ push('addCart'); // Doble toque sobre el antiguo botón ya no debe añadir ni fallar
+ assert.equal(node.innerHTML,first,serviceId+' ignora doble toque después de agregar');
+ push('selectService','piscina-limpieza'); // Evento atrasado fuera de la pantalla de catálogo
+ assert.equal(node.innerHTML,first,serviceId+' ignora selección de piscina fuera del catálogo');
+ const whatsappText=appWindow.VillablancaTest.requestText();
+ const count=(first.match(/class="cart-line"/g)||[]).length;
+ assert.equal(count,1,serviceId+' debe crear exactamente una línea');
+ return {html:first,whatsappText};
+}
+for(const id of ['aseo-hogar','aseo-profundo','aseo-recurrente','sofa-l','auto-city','tapiz-auto-2','vidrios-casa','industrial-hidro','jardin-pasto','mante-visita','piscina-limpieza','piscina-mantencion']){
+ const {html,whatsappText}=simulateBooking(id);
+ const isPool=id.startsWith('piscina-');
+ assert.equal(html.includes('Piscina: Entrerrada'),false,'sin error ortográfico');
+ if(isPool) {
+   assert.match(whatsappText,/Piscina: Enterrada/,id+' conserva detalles de piscina');
+ } else {
+   assert.doesNotMatch(whatsappText,/Piscina:/,id+' no incluye piscina en el pedido');
+   assert.doesNotMatch(whatsappText,/Tamaño: .*piscina/i,id+' no incluye piscina en detalles');
+   assert.doesNotMatch(html,/Piscina: Enterrada/,id+' no muestra piscina en el resumen');
+   assert.doesNotMatch(whatsappText,/Lugar: Casa|Acceso: Primer piso/,id+' no mezcla detalles de vidrios');
+ }
+}
+
+console.log('OK: 12 categorías/servicios probados, sin piscina fantasma, doble toque protegido; horas, tarifas y agenda.');
