@@ -28,6 +28,8 @@ jobs:
         run: node scripts/smoke-client.cjs
       - name: Prueba cliente a empresa - sin cobros
         run: node scripts/smoke-admin.cjs
+      - name: Prueba de conexion segura y reglas de Supabase
+        run: node scripts/smoke-cloud.cjs
       - name: Validate source formatting and Android XML
         run: |
           git diff --check HEAD^
