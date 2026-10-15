@@ -24,6 +24,8 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 2
+      - name: Pruebas automáticas del cliente: precios, extras y agenda
+        run: node scripts/smoke-client.cjs
       - name: Validate source formatting and Android XML
         run: |
           git diff --check HEAD^
@@ -34,7 +36,7 @@ jobs:
           assert pathlib.Path('app/src/main/AndroidManifest.xml').is_file()
           PY
   android:
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push'
     needs: validate
     runs-on: ubuntu-latest
     timeout-minutes: 45
