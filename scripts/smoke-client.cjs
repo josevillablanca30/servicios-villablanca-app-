@@ -4,7 +4,7 @@ const fs=require('node:fs');
 const vm=require('node:vm');
 const assert=require('node:assert/strict');
 const html=fs.readFileSync('app/src/main/assets/index.html','utf8');
-const scripts=[...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)].map(m=>m[1]);
+const scripts=[...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)].map(m=>m[1]).filter(Boolean);
 assert.equal(scripts.length,2,'Se esperan catálogo y frontend');
 const handlers={};
 const root={innerHTML:'',addEventListener(type,fn){handlers[type]=fn;}};
