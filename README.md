@@ -39,6 +39,22 @@ Prueba de reglas sin dependencias extra: `node scripts/smoke-client.cjs`.
 
 Crear base de datos y roles de seguridad, registrar órdenes desde el cliente, desarrollar vista de empresa/agenda de trabajadoras, exportación Excel, comprobante de pedido, notificaciones internas; integrar pasarela de pago real y boleta electrónica mediante proveedores autorizados. No insertar claves ni contraseñas en este repositorio público.
 
+## Conexión entre celulares — preparada y pendiente de activar (octubre 2026)
+
+La versión del repositorio incluye **código cliente Supabase**, acceso de administradora, sincronización de pedidos, trabajadores, asignaciones, agenda semanal y CSV. Se configuró HTTPS seguro en Android mediante WebViewAssetLoader, con permiso INTERNET y sin permitir acceso universal a páginas `file://`.
+
+**Todavía no hay una base de datos Supabase del propietario vinculada a esta APK.** El archivo `app/src/main/assets/cloud-config.js` mantiene `url:''` y `publishableKey:''` deliberadamente; por eso se conserva la demo de un teléfono. **No digas que está activa una prueba entre dos celulares.**
+
+- Esquema de tablas/RPC/RLS del backend: `supabase/01_demo_schema.sql`.
+- Pasos exactos para activar el proyecto gratis y asignar cuenta privada: [supabase/ACTIVACION.md](supabase/ACTIVACION.md).
+- Cliente HTTP seguro: `cloud-api.js`; panel empresarial conectado: `cloud-admin.js`.
+- El pedido anónimo solo se crea a través de una RPC protegida y validada; únicamente el administrador autorizado mediante Supabase Auth puede consultar nombre, teléfono, dirección, asignaciones y trabajadoras. Ninguna contraseña ni llave privada va en la APK.
+- La administración se actualiza cada 8 segundos con pedidos que lleguen del otro teléfono; Supabase no cobra mensajes de WhatsApp, porque no se envían mensajes.
+- La confirmación demo no procesa tarjeta ni transferencia, no emite boletas y no marca como recibido un pedido cuando falla internet.
+- Cuando se configure Supabase en GitHub y se vuelva a compilar, los mismos APK en dos teléfonos permitirán probar este flujo con **datos ficticios**, antes de habilitar comercio real.
+
+Comprobar localmente: `node scripts/smoke-cloud.cjs`. Este test simula el servicio de Supabase, no reemplaza una prueba en servidor real.
+
 ## Demostración guiada de cliente y empresa (sin servidor)
 1. En la app Android, selecciona Aseo hogar, elige 4 horas + 1 hora de planchado y, si quieres, agrega lavado de auto como otro servicio.
 2. Ingresa datos **ficticios** de cliente y una fecha válida, al menos 24 h anticipada. Llega hasta el checkout.
