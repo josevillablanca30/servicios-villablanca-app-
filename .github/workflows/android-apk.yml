@@ -26,6 +26,8 @@ jobs:
           fetch-depth: 2
       - name: Pruebas automáticas del cliente - precios, extras y agenda
         run: node scripts/smoke-client.cjs
+      - name: Prueba cliente a empresa - sin cobros
+        run: node scripts/smoke-admin.cjs
       - name: Validate source formatting and Android XML
         run: |
           git diff --check HEAD^
