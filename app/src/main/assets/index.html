@@ -71,12 +71,12 @@
  const item=(id,cat,name,price,extras={})=>({id,category:cat,name,price,pricing:'unit',status:price==null?'cotizar':'publicado',...extras});
  const services=[
   item('aseo-hogar','hogar','Aseo hogar por horas',9520,{pricing:'referencia-sin-unidad',minHours:4,note:'Tarifa publicada $9.520 IVA incluido por hora, con mínimo 4 horas por visita. Los extras se suman automáticamente al estimado.',description:'Aspirado y trapeado, limpieza general de muebles, cocina, dormitorios (incluye cambio de sábanas) y baños. Alcance según tiempo y necesidades.'}),
-  item('aseo-profundo','hogar','Aseo profundo a domicilio',null,{minHours:4,description:'Visita de limpieza intensiva. Definimos alcance y presupuesto según el lugar.'}),
-  item('aseo-recurrente','hogar','Aseo regular programado',null,{minHours:4,description:'Limpieza recurrente, con frecuencia a convenir.'}),
+  item('aseo-profundo','hogar','Aseo profesional a domicilio',null,{minHours:4,description:'Limpieza profesional de casas, departamentos y otras instalaciones deshabitadas. Alcance y precio sujetos a evaluación.'}),
+  item('aseo-recurrente','hogar','Aseo regular programado',null,{minHours:4,description:'Plan de limpieza regular para clientes con contratos mensuales; frecuencia y valor por confirmar.'}),
   item('sofa-l','tapices','Sofá tipo L',75000,{description:'Lavado profundo de sofá tipo L.'}),
-  item('sofa-3','tapices','Sofá de 3 cuerpos',null,{conflict:[45000,50000],note:'Hay dos tarifas distintas en las gráficas: $45.000 y $50.000. Confirmar antes de publicar.'}),
-  item('sofa-2','tapices','Sofá de 2 cuerpos',null,{conflict:[35000,45000],note:'Hay dos tarifas distintas en las gráficas: $35.000 y $45.000. Confirmar antes de publicar.'}),
-  item('sofa-1','tapices','Sofá de 1 cuerpo',null,{conflict:[30000,38080],note:'Hay dos tarifas distintas en las gráficas: $30.000 y $38.080. Confirmar antes de publicar.'}),
+  item('sofa-3','tapices','Sofá de 3 cuerpos',null,{conflict:[45000,50000],note:'Tarifa por unidad pendiente de confirmación comercial ($45.000 o $50.000).'}),
+  item('sofa-2','tapices','Sofá de 2 cuerpos',null,{conflict:[35000,45000],note:'Tarifa por unidad pendiente de confirmación comercial ($35.000 o $45.000).'}),
+  item('sofa-1','tapices','Sofá de 1 cuerpo',null,{conflict:[30000,38080],note:'Tarifa por unidad pendiente de confirmación comercial ($30.000 o $38.080).'}),
   item('poltrona','tapices','Poltrona',25000),
   item('sitial','tapices','Sitial o banqueta',20000),
   item('silla-respaldo','tapices','Silla con respaldo tapizado',6500),
@@ -100,6 +100,8 @@
   item('industrial-hombre','industrial','Lavado industrial de pisos con operador a bordo',null,{description:'Limpieza de grandes superficies mediante máquina conducida por operador.'}),
   item('industrial-hidro','industrial','Hidrolavado industrial trifásico',null,{description:'Limpieza industrial a presión, requiere revisar condiciones de trabajo y conexión.'}),
   item('industrial-conv','industrial','Lavado de pisos con máquina convencional',null),
+  item('industrial-cerchas','industrial','Lavado de cerchas y estructuras metálicas',null,{description:'Servicio industrial sujeto a evaluación y cotización.'}),
+  item('industrial-lineas','industrial','Limpieza de líneas de proceso',null,{description:'Limpieza industrial de líneas de proceso para plantas procesadoras. Requiere evaluación técnica y cotización.'}),
   item('piscina-limpieza','piscinas','Limpieza de piscina',null,{proposed:true}),
   item('piscina-mantencion','piscinas','Mantención periódica de piscina',null,{proposed:true}),
   item('jardin-pasto','jardineria','Corte de pasto y mantención',null,{proposed:true}),
@@ -113,20 +115,21 @@
   item('bebe-respaldo','especializada','Limpieza especializada de respaldo',null,{fulfillment:'taller'})
  ];
  const extras=[
-  {id:'planchado',group:'Ropa y organización',name:'Planchado de ropa',unit:'horas',price:5000},
-  {id:'lavado-ropa',group:'Ropa y organización',name:'Lavado de ropa',unit:'cargas',price:4500},
-  {id:'doblado',group:'Ropa y organización',name:'Doblado y organización de ropa',unit:'horas',price:4000},
-  {id:'closet',group:'Ropa y organización',name:'Orden profundo de clósets',unit:'clósets',price:12000},
-  {id:'refri',group:'Limpieza detallada',name:'Interior de refrigerador',unit:'unidades',price:12000},
-  {id:'horno',group:'Limpieza detallada',name:'Interior de horno',unit:'unidades',price:15000},
-  {id:'vidrios',group:'Limpieza detallada',name:'Vidrios interiores',unit:'ventanas',price:3000},
-  {id:'cocina',group:'Limpieza detallada',name:'Desengrase profundo de cocina',unit:'cocinas',price:18000},
-  {id:'banos',group:'Limpieza detallada',name:'Desincrustación de baños',unit:'baños',price:12000},
-  {id:'muebles',group:'Limpieza detallada',name:'Interior de muebles y cajones',unit:'módulos',price:2500},
-  {id:'terraza',group:'Áreas especiales',name:'Terraza o balcón',unit:'áreas',price:15000},
-  {id:'mascotas',group:'Áreas especiales',name:'Limpieza intensiva de pelo de mascotas',unit:'áreas',price:10000},
-  {id:'vapor',group:'Áreas especiales',name:'Vapor en cocina o baños',unit:'áreas',price:12000},
-  {id:'cortinas',group:'Áreas especiales',name:'Lavado de cortinas',unit:'juegos',price:18000}
+  {id:'planchado',group:'Ropa y organización',name:'Planchado de ropa',unit:'hora',price:9520,extraHours:1},
+  {id:'lavado-ropa',group:'Ropa y organización',name:'Lavado de ropa',unit:'hora',price:9520,extraHours:1},
+  {id:'doblado',group:'Ropa y organización',name:'Doblado y organización de ropa',unit:'hora',price:9520,extraHours:1},
+  {id:'closet',group:'Ropa y organización',name:'Orden profundo de clósets',unit:'hora',price:9520,extraHours:1},
+  {id:'refri',group:'Limpieza detallada',name:'Limpieza de refrigerador',unit:'hora',price:9520,extraHours:1},
+  {id:'horno',group:'Limpieza detallada',name:'Interior del horno (desengrasado profundo)',unit:'hora',price:9520,extraHours:1},
+  {id:'vidrios',group:'Limpieza detallada',name:'Vidrios interiores (mampara, shower, puertas vidriadas)',unit:'sector',price:3000},
+  {id:'hyla',group:'Limpieza detallada',name:'Aspirado para personas alérgicas (máquina Hyla)',unit:'servicio',price:20000},
+  {id:'campana',group:'Limpieza detallada',name:'Desengrase de campana',unit:'campana',price:12000},
+  {id:'terraza',group:'Áreas especiales',name:'Terraza y balcón',unit:'hora',price:9520,extraHours:1},
+  {id:'mascotas',group:'Áreas especiales',name:'Limpieza intensiva de pelo de mascotas (aspiradora industrial incluida)',unit:'servicio',price:null},
+  {id:'cortinas',group:'Áreas especiales',name:'Lavado de cortinas (blackout, roller o clásicas)',unit:'pieza',price:null},
+  {id:'alfombras-m2',group:'Áreas especiales',name:'Lavado de alfombras',unit:'m²',price:null},
+  {id:'balde',group:'Implementos opcionales',name:'Balde con productos de limpieza',unit:'kit',price:9990,contents:['Cif','Cloro gel','Desengrasante','Espuma antisarro Harpic','Poet','Lustra mueble','Limpia vidrios','Esponja','Trapero','2 paños','Nova','Bolsa de basura']},
+  {id:'aspiradora',group:'Implementos opcionales',name:'Aspiradora industrial',unit:'equipo',price:7500}
  ];
  const vehicleExtras=[{id:'piso-techo',group:'Complementos',name:'Tapices de piso y techo',unit:'vehículo',price:20000,appliesTo:['tapiz-auto-2','tapiz-auto-3']}];
  const communities=['San Felipe','Los Andes','Santa María','San Esteban','Rinconada','Calle Larga','Otra comuna (consultar)'];
@@ -187,9 +190,13 @@
   const getExtrasFor=s=>isHome(s)?C.extras : C.vehicleExtras.filter(e=>e.appliesTo.includes(s?.id));
   const activeExtraCount=extras=>Object.values(extras||{}).filter(n=>n>0).length;
   const isHourlyHome=s=>s?.id==='aseo-hogar';
-  const getHomeHours=line=>Math.max(4,Number(line?.details?.hours||4)||4);
+  const getMinHomeHours=d=>(parseInt(d?.bedrooms,10)>=3&&parseInt(d?.bathrooms,10)>=2?6:4);
+  const getHomeHours=line=>Math.max(getMinHomeHours(line?.details),Math.min(10,Number(line?.details?.hours||4)||4));
+  const getAdditionalHours=line=>isHourlyHome(getService(line.id))?C.extras.reduce((a,e)=>a+(e.extraHours||0)*Math.max(0,Number(line.extras?.[e.id]||0)),0):0;
+  const getTotalHomeHours=line=>getHomeHours(line)+getAdditionalHours(line);
+  const getTotalScheduledHours=cart=>cart.reduce((a,line)=>a+(isHourlyHome(getService(line.id))?getTotalHomeHours(line)*Math.max(1,Number(line.qty||1)):0),0);
   const getBaseLineTotal=line=>{const s=getService(line.id);if(!s)return 0;if(isHourlyHome(s))return (s.price||0)*getHomeHours(line)*Math.max(1,Number(line.qty||1)||1);if(s.price==null)return null;return s.price*Math.max(1,Number(line.qty||1)||1);};
-  const lineBaseLabel=line=>{const s=getService(line.id);if(!s)return 'A cotizar';if(isHourlyHome(s))return `${format(s.price)} x ${getHomeHours(line)} h x ${Math.max(1,Number(line.qty||1)||1)} visita(s)`;if(s.price==null)return 'A cotizar';return format(s.price*Math.max(1,Number(line.qty||1)||1));};
+  const lineBaseLabel=line=>{const s=getService(line.id);if(!s)return 'Por definir';if(isHourlyHome(s))return `${format(s.price)} × ${getHomeHours(line)} h × ${Math.max(1,Number(line.qty||1)||1)} visita(s)`;if(s.price==null)return 'Por definir';return format(s.price*Math.max(1,Number(line.qty||1)));};
   function priceInfo(s){
     if(isHourlyHome(s))return `<span class="price-ref">${format(s.price)}</span><span class="price-meta">por hora · mínimo ${s.minHours||4} horas</span>`;
     if(s.pricing==='referencia-sin-unidad')return `<span class="price-ref">${format(s.price)}</span><span class="price-meta">Tarifa publicada · aplicación a confirmar</span>`;
@@ -206,7 +213,7 @@
         if(s.pricing==='referencia-sin-unidad')ambiguous++;
         else unknown++;
       } else known+=baseTotal;
-      for(const [key,q] of Object.entries(line.extras||{}))if(q>0){const e=[...C.extras,...C.vehicleExtras].find(e=>e.id===key);if(!e||e.price==null)unknown++;else known+=e.price*q;}
+      for(const [key,q] of Object.entries(line.extras||{}))if(q>0){const e=[...C.extras,...C.vehicleExtras].find(e=>e.id===key);if(!e||e.price==null)unknown++;else known+=e.price*q*(isHome(s)?Math.max(1,Number(line.qty||1)):1);}
     }
     const outside=client.commune&&client.commune!=='San Felipe'&&client.commune!=='Los Andes';
     const applyTravel=Boolean(hasWash&&outside&&client.commune!=='Otra comuna (consultar)');
