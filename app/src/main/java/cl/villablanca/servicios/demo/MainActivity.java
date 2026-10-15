@@ -20,6 +20,8 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.webkit.WebResourceResponse;
+import androidx.webkit.WebViewAssetLoader;
 import android.webkit.RenderProcessGoneDetail;
 import android.widget.FrameLayout;
 import android.widget.TextView;
@@ -27,10 +29,12 @@ import android.view.Gravity;
 
 /** Contenedor Android de demostración. Nunca procesa tarjetas ni realiza cobros. */
 public final class MainActivity extends Activity {
-    private static final String LOCAL_URL = "file:///android_asset/index.html";
+    private static final String LOCAL_URL = "https://appassets.androidplatform.net/assets/index.html";
+    private static final String LOCAL_ASSET_PREFIX = "https://appassets.androidplatform.net/assets/";
     private static final int BACKGROUND = Color.rgb(11, 8, 15);
     private FrameLayout root;
     private WebView webView;
+    private WebViewAssetLoader assetLoader;
 
     @Override protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -40,12 +44,15 @@ public final class MainActivity extends Activity {
         root.setBackgroundColor(BACKGROUND);
         setContentView(root);
         try {
+            assetLoader = new WebViewAssetLoader.Builder()
+                .addPathHandler("/assets/", new WebViewAssetLoader.AssetsPathHandler(this))
+                .build();
             webView = new WebView(this);
             webView.setBackgroundColor(BACKGROUND);
             WebSettings settings = webView.getSettings();
             settings.setJavaScriptEnabled(true);
             settings.setDomStorageEnabled(true);
-            settings.setAllowFileAccess(true);
+            settings.setAllowFileAccess(false);
             settings.setAllowContentAccess(false);
             settings.setMixedContentMode(WebSettings.MIXED_CONTENT_NEVER_ALLOW);
             settings.setSupportMultipleWindows(false);
@@ -72,6 +79,9 @@ public final class MainActivity extends Activity {
             }, "VillablancaAndroid");
             webView.setWebChromeClient(new WebChromeClient());
             webView.setWebViewClient(new WebViewClient() {
+                @Override public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
+                    return assetLoader.shouldInterceptRequest(request.getUrl());
+                }
                 @Override public boolean shouldOverrideUrlLoading(WebView view, String url) {
                     return handleNavigation(url);
                 }
@@ -131,7 +141,7 @@ public final class MainActivity extends Activity {
         catch (ActivityNotFoundException ignored) { }
     }
     private boolean handleNavigation(String url) {
-        if (url == null || url.startsWith("file:///android_asset/")) return false;
+        if (url == null || url.startsWith(LOCAL_ASSET_PREFIX)) return false;
         if (url.startsWith("https://") || url.startsWith("http://") ||
                 url.startsWith("mailto:") || url.startsWith("tel:") || url.startsWith("whatsapp:")) {
             openExternalUrl(url);
