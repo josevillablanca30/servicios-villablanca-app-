@@ -37,7 +37,7 @@ change('draft:bedrooms','3');
 change('draft:bathrooms','2');
 assert.match(root.innerHTML,/el mínimo es de 6 horas/);
 click('addCart');
-assert.match(root.innerHTML,/3 dormitorio/);
+assert.match(root.innerHTML,/6 h por visita/);
 const after=Date.now()+3*86400000;
 const day=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Santiago',year:'numeric',month:'2-digit',day:'2-digit'}).format(after);
 change('client:day',day);
