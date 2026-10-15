@@ -3,7 +3,7 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const html=fs.readFileSync('app/src/main/assets/index.html','utf8');
 const admin=fs.readFileSync('app/src/main/assets/admin-demo.js','utf8');
-const scripts=[...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)].map(x=>x[1]);
+const scripts=[...html.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)].map(x=>x[1]).filter(Boolean);
 assert.equal(scripts.length,2);
 function boot(storage=new Map()){
  const listeners={},root={innerHTML:'',addEventListener(t,fn){listeners[t]=fn;}},alerts=[];
