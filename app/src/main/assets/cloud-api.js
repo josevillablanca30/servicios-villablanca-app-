@@ -12,7 +12,9 @@
  function store(x){try{localStorage.setItem(SESSION_KEY,JSON.stringify(x));}catch(e){}}
  async function request(path,{method='GET',body=null,admin=false,token=null}={}){
   if(!enabled)throw Error('Supabase no está configurado en esta compilación de GitHub.');
-  const headers={'apikey':key,'Authorization':'Bearer '+(token||key),'Accept':'application/json'};
+  const headers={'apikey':key,'Accept':'application/json'};
+  // Las llaves sb_publishable_ no son JWT; solo el JWT del administrador va en Authorization.
+  if(token)headers.Authorization='Bearer '+token;
   if(body!==null)headers['Content-Type']='application/json';
   const response=await fetch(url+path,{method,headers,...(body!==null?{body:JSON.stringify(body)}:{})});
   const text=await response.text();
