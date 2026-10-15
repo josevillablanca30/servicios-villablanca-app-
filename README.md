@@ -7,7 +7,9 @@ Repositorio principal de la aplicación **Servicios Villablanca**. App Android n
 - El cliente configura servicios, cantidades, extras, datos de contacto y una fecha preferida; revisa valores y llega al checkout demostrativo.
 - En el checkout existen **crédito, débito y transferencia** a modo de demostración. **No se cobra**, no se ingresan tarjetas y no se emiten boletas.
 - Cotizaciones sin tarifa confirmada se solicitan por WhatsApp, que requiere intervención del cliente para enviar.
-- **Aún no existe backend compartido ni un panel operativo que reciba estos pedidos automáticamente.** Ese es el siguiente módulo, separado del catálogo cliente.
+- **NUEVO (15/oct/2026):** el checkout incluye **«Confirmar pedido de PRUEBA · sin pagar»**. Crea una orden DEMO y un conjunto de tareas por servicio; desde **«Panel empresa (demo)»** puede verse, asignarse una trabajadora por tarea, cambiar estados, revisar agenda semanal y exportar CSV compatible con Excel. Se incluye comprobante de pedido **NO válido como boleta**.
+- **LÍMITE ACTUAL:** la base del demo es `localStorage`, es decir **solo guarda y comparte datos entre las vistas del MISMO teléfono o navegador**. Dos teléfonos distintos no sincronizan pedidos; todavía hay que conectar backend y base de datos. No simular como real una conexión remota.
+- Se incluyen 4 trabajadoras ficticias para probar asignaciones. El panel tiene un botón para añadir más trabajadoras a la demo. La vista empresa no tiene login: **no utilizar para pedidos reales ni datos personales reales**.
 
 ## Actualización del catálogo — 14 de octubre de 2026
 
@@ -36,3 +38,14 @@ Prueba de reglas sin dependencias extra: `node scripts/smoke-client.cjs`.
 ## Antes de vender como sistema en producción
 
 Crear base de datos y roles de seguridad, registrar órdenes desde el cliente, desarrollar vista de empresa/agenda de trabajadoras, exportación Excel, comprobante de pedido, notificaciones internas; integrar pasarela de pago real y boleta electrónica mediante proveedores autorizados. No insertar claves ni contraseñas en este repositorio público.
+
+## Demostración guiada de cliente y empresa (sin servidor)
+1. En la app Android, selecciona Aseo hogar, elige 4 horas + 1 hora de planchado y, si quieres, agrega lavado de auto como otro servicio.
+2. Ingresa datos **ficticios** de cliente y una fecha válida, al menos 24 h anticipada. Llega hasta el checkout.
+3. Pulsa **Confirmar pedido de PRUEBA · sin pagar**. La app registra la orden solo en el dispositivo y muestra su código VB.
+4. Pulsa **Ver pedido en panel de empresa** (también disponible al pie de la app como **Panel empresa (demo)**). Verás las tareas independientes, total y estado 'No cobrado'.
+5. Asigna Aseo hogar a una trabajadora y vehículo a otra, actualiza estados, abre **Agenda semanal** y **Personal**.
+6. Pulsa **Exportar para Excel**, que genera un CSV UTF-8 separado por punto y coma. En la APK Android 10+ se guarda en Descargas; desde navegador se descarga por el mecanismo web. También puedes generar un comprobante de texto claramente identificado como NO válido para el SII.
+7. **Esta prueba no funciona aún entre dos teléfonos**. GitHub es el repositorio de código, no un servidor que almacene pedidos. Para la siguiente iteración necesitaremos desplegar el backend de demo en algún hosting seguro, gratuito si es posible, y configurar credenciales y acceso de administrador.
+
+**Pruebas automáticas:** `node scripts/smoke-client.cjs && node scripts/smoke-admin.cjs`. [Workflow CI/APK](https://github.com/josevillablanca30/servicios-villablanca-app-/actions/workflows/android-apk.yml).
