@@ -1,0 +1,69 @@
+/* Prueba de frontera de seguridad y flujo servidor (API HTTP simulada en memoria).
+ * La prueba REAL entre celulares exige proyecto Supabase configurado. */
+'use strict';
+const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
+const client=fs.readFileSync('app/src/main/assets/cloud-api.js','utf8');
+const sql=fs.readFileSync('supabase/01_demo_schema.sql','utf8');
+const html=fs.readFileSync('app/src/main/assets/index.html','utf8');
+assert.match(sql,/enable row level security/g);
+assert.match(sql,/create policy vb_orders_admin_read/i);
+assert.match(sql,/grant execute on function public\.vb_submit_demo_order\(jsonb\) to anon,authenticated/i);
+assert.doesNotMatch(sql,/grant select on public\.vb_demo_orders to anon/i);
+assert.match(html,/No llegó el pedido al servidor/i);
+assert.match(html,/window\.VILLABLANCA_CLOUD\.createOrder\(payload\)/);
+const memory=new Map();
+const calls=[];
+let failure=false,unauthorized=false;
+const reply=(data,code=200)=>({ok:code<400,status:code,async text(){return JSON.stringify(data)}});
+const fetch=async(u,req)=>{
+ calls.push({url:u,req});
+ if(failure)return reply({message:'Servidor no disponible'},503);
+ if(u.includes('/auth/v1/token?grant_type=password'))return reply({
+  access_token:'jwt-demo',refresh_token:'refresh-demo',expires_in:3600,user:{id:'00000000-0000-4000-a000-000000000001'}
+ });
+ if(u.includes('/rest/v1/vb_demo_admins'))return reply(unauthorized?[]:[{user_id:'00000000-0000-4000-a000-000000000001'}]);
+ if(u.includes('/rest/v1/vb_demo_orders'))return reply([{id:'order-1',customer_name:'Persona prueba'}]);
+ if(u.includes('/rest/v1/vb_demo_tasks'))return reply([{id:'task-1',order_id:'order-1'}]);
+ if(u.includes('/rest/v1/vb_demo_workers'))return reply([{id:'worker-1',name:'Camila (demo)'}]);
+ if(u.includes('/rpc/vb_submit_demo_order'))return reply({id:'order-1',code:'VB-TEST',demo:true});
+ if(u.includes('/rpc/vb_admin_update_task'))return reply(null);
+ if(u.includes('/rpc/vb_admin_add_worker'))return reply('worker-2');
+ if(u.includes('/auth/v1/logout'))return reply({});
+ throw Error('URL no esperada '+u);
+};
+const window={VILLABLANCA_CLOUD_CONFIG:{url:'https://exampledemo.supabase.co',publishableKey:'sb_publishable_demorandomexamplekey12345'}};
+const store={getItem(k){return memory.get(k)||null},setItem(k,v){memory.set(k,v)},removeItem(k){memory.delete(k)}};
+const ctx={window,fetch,localStorage:store,Intl,Date,Math,console,encodeURIComponent,crypto:require('node:crypto').webcrypto};
+vm.createContext(ctx);new vm.Script(client).runInContext(ctx);
+(async()=>{
+ const api=window.VILLABLANCA_CLOUD;
+ assert.equal(api.enabled,true);
+ const payload={customer:'Cliente ficticio',address:'Calle ficticia 12',commune:'San Felipe',date:'2026-10-20',slot:'Mañana · 08:00',lines:[{id:'aseo-hogar',name:'Aseo hogar',qty:1,extras:[],durationHours:5}],total:47600,paymentMethod:'debit'};
+ const created=await api.createOrder(payload);
+ assert.equal(created.code,'VB-TEST');
+ assert.ok(payload.clientReference.length>=18);
+ const requestInsert=calls.find(x=>x.url.includes('/rpc/vb_submit_demo_order'));
+ assert.equal(JSON.parse(requestInsert.req.body).p_request.paymentMethod,'debit');
+ assert.ok(!requestInsert.req.headers.Authorization.includes('service_role'));
+ unauthorized=true;
+ await assert.rejects(()=>api.signIn('admin@empresa.cl','test-password'),/no tiene autorización/);
+ assert.equal(api.hasSession(),false,'no almacenar tokens de cuentas no autorizadas');
+ unauthorized=false;
+ await api.signIn('admin@empresa.cl','test-password');
+ assert.equal(api.hasSession(),true);
+ const snap=await api.snapshot();
+ assert.equal(snap.orders.length,1);
+ assert.equal(snap.tasks.length,1);
+ assert.equal(snap.workers.length,1);
+ await api.updateTask('task-1','worker-1','Asignado');
+ const mutation=calls.find(x=>x.url.includes('/rpc/vb_admin_update_task'));
+ assert.equal(mutation.req.headers.Authorization,'Bearer jwt-demo');
+ failure=true;
+ await assert.rejects(()=>api.createOrder({...payload,clientReference:'xx-1234567890123456789'}),/Servidor no disponible/);
+ failure=false;
+ await api.signOut();assert.equal(api.hasSession(),false);
+ const offline={window:{VILLABLANCA_CLOUD_CONFIG:{url:'',publishableKey:''}},fetch,localStorage:store,Intl,Date,Math,console,encodeURIComponent};
+ vm.createContext(offline);new vm.Script(client).runInContext(offline);
+ assert.equal(offline.window.VILLABLANCA_CLOUD.enabled,false,'sin configurar no publicar conexión ficticia');
+ console.log('OK: RPC de pedido, RLS, login y rol admin, actualización autenticada, fallo sin confirmación falsa y modo local.');
+})().catch(e=>{console.error(e);process.exit(1)});
