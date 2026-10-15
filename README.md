@@ -18,7 +18,7 @@ Cambios implementados a partir de `ASEO HOGAR_APP.docx` y la fotografía del con
 - Aseo hogar **$9.520 por hora, IVA incluido**, mínimo 4 h; con **3 o más dormitorios y 2 o más baños el mínimo es 6 h**.
 - Planchado, lavado de ropa, doblado/organización y orden profundo de clósets: **$9.520 por hora adicional**, que incrementa el tiempo bloqueado del servicio (p. ej. 4 h de aseo + 1 h de planchado = 5 h / $47.600).
 - Limpieza detallada: refrigerador $9.520/h; interior de horno $9.520/h; vidrios interiores $3.000/sector; aspirado con Hyla $20.000; desengrase de campana $12.000.
-- Áreas especiales: terraza/balcón $9.520/h; pelo de mascotas, cortinas por pieza y alfombras por m² visibles con **precio pendiente de confirmación**.
+- Áreas especiales (actualizado 15 de octubre por instrucción del propietario): **terraza/balcón, pelo de mascotas, lavado de cortinas y lavado de alfombras $9.520 por hora adicional**. Cada unidad seleccionada agrega **1 hora de trabajo de la misma trabajadora** al aseo hogar (4 h + 1 h = 5 h). Los extras de tarifa fija, como Hyla y campana, se cobran aparte sin agregar horas de forma automática. El resumen móvil refleja las horas y el total con extras.
 - Implementos: **balde con productos $9.990** (Cif, cloro gel, desengrasante, espuma antisarro Harpic, Poet, lustra muebles, limpiavidrios, esponja, trapero, 2 paños, Nova y bolsa de basura) y **aspiradora industrial $7.500**.
 - Aseo profesional a domicilio (inmuebles deshabitados), aseo regular programado para planes mensuales y dos servicios industriales nuevos sujetos a cotización.
 - Piscinas conserva su categoría y flujo independientes del aseo hogar.
