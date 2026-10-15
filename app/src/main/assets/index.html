@@ -392,7 +392,7 @@
     if(action==='goCart'){state.view=state.cart.length?'booking':'catalog';render();return;}
     if(action==='quickHome'){selectService('aseo-hogar');return;}
     if(action==='category'){state.filter=id;state.query='';state.view='catalog';render();return;}
-    if(action==='selectService'){selectService(id);return;}
+    if(action==='selectService'){if(state.view!=='catalog')return;selectService(id);return;}
     if(action==='filter'){state.filter=id;render(false);return;}
     if(action==='clearSearch'){state.query='';state.filter='all';render(false);return;}
     if(action==='incMain'){state.draft.qty=Math.min(25,state.draft.qty+1);render(false);return;}
@@ -401,6 +401,8 @@
     if(action==='decHours'){state.draft.details.hours=Math.max(getMinHomeHours(state.draft.details),+state.draft.details.hours-1);render(false);return;}
     if(action==='incExtra'||action==='decExtra'){let q=state.draft.extras[id]||0;q+=action==='incExtra'?1:-1;state.draft.extras[id]=Math.max(0,Math.min(20,q));render(false);return;}
     if(action==='addCart'){
+      // Doble toque o clic retrasado: nunca crear otro ítem después de cambiar de pantalla.
+      if(state.view!=='configure'||!state.draft||!getService(state.draft.id))return;
       if(isHourlyHome(getService(state.draft.id))&&getTotalHomeHours(state.draft)>10){alert('La suma de aseo y actividades adicionales excede la jornada 08:00–18:00. Reduce las horas o los extras.');return;}
       const d=structuredClone(state.draft);if(state.editIndex===null)state.cart.push(d);else state.cart[state.editIndex]=d;
       state.draft=null;state.editIndex=null;state.view='booking';render();return;
