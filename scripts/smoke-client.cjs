@@ -29,6 +29,20 @@ assert.equal(quoted(order(3,2,4)).known,57120,'3 dormitorios y 2 baños exigen 6
 assert.equal(quoted(order(2,1,4,{balde:1})).known,48070,'balde cuesta 9990');
 assert.equal(quoted(order(2,1,4,{planchado:1,balde:1})).known,57590,'horas y kit sumados');
 assert.equal(catalog.extras.find(e=>e.id==='balde').contents.length,12,'12 artículos en kit');
+/* Los tres extras de Áreas especiales ahora tienen precio por hora, no precio pendiente. */
+for(const id of ['mascotas','cortinas','alfombras-m2']){
+ const e=catalog.extras.find(x=>x.id===id);
+ assert.equal(e.price,9520,id+' debe costar $9.520 por hora');
+ assert.equal(e.unit,'hora',id+' se contrata por hora, no por pieza ni m²');
+ assert.equal(e.extraHours,1,id+' agrega 1 hora a la visita');
+ assert.equal(quoted(order(2,1,4,{[id]:1})).known,47600,id+' suma 1 hora y $9.520');
+ assert.equal(window.VillablancaTest.scheduledHours(order(2,1,4,{[id]:1})),5,id+' reserva 5 horas');
+ assert.equal(quoted(order(2,1,4,{[id]:1})).allKnown,true,id+' no bloquea el pago demo por cotización');
+}
+assert.equal(quoted(order(2,1,4,{'mascotas':1,'cortinas':1,'alfombras-m2':1})).known,66640,'4h + 3 extras = 7h y $66.640');
+assert.equal(window.VillablancaTest.scheduledHours(order(2,1,4,{'mascotas':1,'cortinas':1,'alfombras-m2':1})),7,'3 extras = +3 horas');
+assert.equal(quoted(order(2,1,4,{'mascotas':1,'balde':1,'hyla':1})).known,77590,'precio hora y adicionales fijos contabilizados');
+
 for(const x of ['planchado','lavado-ropa','doblado','closet']) {
  assert.equal(catalog.extras.find(e=>e.id===x).price,9520,x+' a 9520');
  assert.equal(catalog.extras.find(e=>e.id===x).extraHours,1,x+' suma hora');
@@ -39,6 +53,21 @@ click('catalog');
 click('selectService','aseo-hogar');
 assert.match(root.innerHTML,/Ver los 12 productos incluidos/);
 assert.match(root.innerHTML,/Aspirado para personas alérgicas/);
+assert.match(root.innerHTML,/4 h de aseo \+ 1 h de planchado = 5 h por \$47\.600/,'la explicación se entiende con ejemplo');
+assert.doesNotMatch(root.innerHTML,/Las actividades identificadas/,'eliminar jerga ambigua');
+assert.doesNotMatch(root.innerHTML,/Valor por confirmar/,'los tres extras ahora tienen precio');
+click('incExtra','mascotas');
+assert.match(root.innerHTML,/4 h aseo \+ 1 h extra = 5 h/,'barra inferior actualiza la duración');
+assert.match(root.innerHTML,/Total \$47\.600/,'barra inferior muestra valor total real');
+click('incExtra','cortinas');
+assert.match(root.innerHTML,/4 h aseo \+ 2 h extra = 6 h/,'dos actividades suman 2h');
+assert.match(root.innerHTML,/Total \$57\.120/,'dos actividades incrementan valor exacto');
+click('incExtra','alfombras-m2');
+assert.match(root.innerHTML,/4 h aseo \+ 3 h extra = 7 h/,'tres actividades suman 3h');
+assert.match(root.innerHTML,/Total \$66\.640/,'tres actividades incrementan valor exacto');
+click('decExtra','mascotas');click('decExtra','cortinas');click('decExtra','alfombras-m2');
+assert.match(root.innerHTML,/4 h aseo \+ 0 h extra = 4 h/,'reducir extras resta horas y valor');
+
 change('draft:bedrooms','3');
 change('draft:bathrooms','2');
 assert.match(root.innerHTML,/el mínimo es de 6 horas/);
