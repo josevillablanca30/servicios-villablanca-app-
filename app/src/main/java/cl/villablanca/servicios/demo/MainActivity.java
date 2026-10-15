@@ -3,9 +3,16 @@ package cl.villablanca.servicios.demo;
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
+import android.content.ContentValues;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Build;
+import android.os.Environment;
+import android.provider.MediaStore;
+import android.util.Base64;
+import android.widget.Toast;
+import java.io.OutputStream;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
@@ -50,6 +57,18 @@ public final class MainActivity extends Activity {
                         runOnUiThread(() -> openExternalUrl(url));
                     }
                 }
+                /** Solo permite exportar archivos locales .csv/.txt de la DEMO; no accede a datos bancarios. */
+                @JavascriptInterface public void saveDemoFile(String fileName, String mime, String base64) {
+                    if (fileName == null || !fileName.matches("[A-Za-z0-9._-]{1,100}") ||
+                        !(fileName.endsWith(".csv") || fileName.endsWith(".txt")) ||
+                        base64 == null || base64.length() > 5000000) return;
+                    if (!("text/csv;charset=utf-8".equals(mime) || "text/plain;charset=utf-8".equals(mime))) return;
+                    try {
+                        final byte[] bytes = Base64.decode(base64, Base64.DEFAULT);
+                        if (bytes.length > 3000000) return;
+                        runOnUiThread(() -> saveCsvOrReceipt(fileName, mime, bytes));
+                    } catch (IllegalArgumentException ignored) { }
+                }
             }, "VillablancaAndroid");
             webView.setWebChromeClient(new WebChromeClient());
             webView.setWebViewClient(new WebViewClient() {
@@ -83,6 +102,30 @@ public final class MainActivity extends Activity {
             showError("No fue posible iniciar la aplicación. Actualiza Android System WebView e inténtalo nuevamente.");
         }
     }
+    private void saveCsvOrReceipt(String fileName, String mime, byte[] bytes) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            Toast.makeText(this, "Para exportar en Android 9 o anterior, usa la versión web.", Toast.LENGTH_LONG).show();
+            return;
+        }
+        Uri uri = null;
+        try {
+            ContentValues values = new ContentValues();
+            values.put(MediaStore.Downloads.DISPLAY_NAME, fileName);
+            values.put(MediaStore.Downloads.MIME_TYPE, mime.startsWith("text/csv") ? "text/csv" : "text/plain");
+            values.put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
+            uri = getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
+            if (uri == null) throw new IllegalStateException("Descarga no disponible");
+            try (OutputStream stream = getContentResolver().openOutputStream(uri)) {
+                if (stream == null) throw new IllegalStateException("No se pudo abrir el archivo");
+                stream.write(bytes);
+            }
+            Toast.makeText(this, "Archivo guardado en Descargas: " + fileName, Toast.LENGTH_LONG).show();
+        } catch (Exception e) {
+            if (uri != null) try { getContentResolver().delete(uri, null, null); } catch (Exception ignored) { }
+            Toast.makeText(this, "No se pudo guardar el archivo. Intenta nuevamente.", Toast.LENGTH_LONG).show();
+        }
+    }
+
     private void openExternalUrl(String url) {
         try { startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url))); }
         catch (ActivityNotFoundException ignored) { }
