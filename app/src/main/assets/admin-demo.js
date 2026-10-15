@@ -140,9 +140,17 @@ function receipt(id){
 }
 function download(name,data,mime){
  try{
+ // Android WebView no descarga enlaces blob: de forma fiable; usar puente nativo.
+ if(global.VillablancaAndroid&&typeof global.VillablancaAndroid.saveDemoFile==='function'&&typeof btoa==='function'){
+   const bytes=new TextEncoder().encode(data);
+   let binary='';for(let i=0;i<bytes.length;i+=8192){binary+=String.fromCharCode(...bytes.slice(i,i+8192));}
+   global.VillablancaAndroid.saveDemoFile(name,mime,btoa(binary));
+   notice='Archivo enviado a Descargas del teléfono.';
+   return true;
+ }
  const blob=new Blob([data],{type:mime}),url=URL.createObjectURL(blob),a=document.createElement('a');
  a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),10000);return true;
- }catch(e){notice='La descarga no está habilitada en este navegador. Intenta abrir desde Chrome o computador.';return false;}
+ }catch(e){notice='No se pudo descargar el archivo en este dispositivo. Prueba desde Chrome o computador.';return false;}
 }
 function exportCsv(){
  const delim=';';
