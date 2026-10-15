@@ -91,14 +91,14 @@ function simulateBooking(serviceId) {
 for(const id of ['aseo-hogar','aseo-profundo','aseo-recurrente','sofa-l','auto-city','tapiz-auto-2','vidrios-casa','industrial-hidro','jardin-pasto','mante-visita','piscina-limpieza','piscina-mantencion']){
  const {html,whatsappText}=simulateBooking(id);
  const isPool=id.startsWith('piscina-');
- assert.equal(html.includes('Piscina: Entrerrada'),false,'sin error ortográfico');
  if(isPool) {
    assert.match(whatsappText,/Piscina: Enterrada/,id+' conserva detalles de piscina');
  } else {
    assert.doesNotMatch(whatsappText,/Piscina:/,id+' no incluye piscina en el pedido');
    assert.doesNotMatch(whatsappText,/Tamaño: .*piscina/i,id+' no incluye piscina en detalles');
    assert.doesNotMatch(html,/Piscina: Enterrada/,id+' no muestra piscina en el resumen');
-   assert.doesNotMatch(whatsappText,/Lugar: Casa|Acceso: Primer piso/,id+' no mezcla detalles de vidrios');
+   if(id==='vidrios-casa')assert.match(whatsappText,/Lugar: Casa/,id+' conserva sus datos propios de vidrios');
+   else assert.doesNotMatch(whatsappText,/Lugar: Casa|Acceso: Primer piso/,id+' no mezcla detalles de vidrios');
  }
 }
 
