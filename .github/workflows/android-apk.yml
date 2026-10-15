@@ -30,6 +30,9 @@ jobs:
         run: node scripts/smoke-admin.cjs
       - name: Prueba de conexion segura y reglas de Supabase
         run: node scripts/smoke-cloud.cjs
+      - name: Revisar sintaxis de scripts externos del APK
+        run: |
+          for file in app/src/main/assets/*.js; do node --check "$file"; done
       - name: Validate source formatting and Android XML
         run: |
           git diff --check HEAD^
