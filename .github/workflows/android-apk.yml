@@ -9,7 +9,7 @@ on:
         default: true
   push:
     branches: [main]
-    paths: ['app/**', '*.gradle*', 'gradle/**', 'gradle.properties', '.github/workflows/android-apk.yml']
+    paths: ['app/**', 'scripts/**', '*.gradle*', 'gradle/**', 'gradle.properties', '.github/workflows/android-apk.yml']
 
 permissions:
   contents: read
