@@ -1,8 +1,5 @@
-/* Supabase PUBLIC configuration (optional). Never put service_role or any secret here.
- * Complete url + publishable (anon) key ONLY after creating your own free Supabase project.
- * Until configured, the existing same-phone demonstration remains fully functional.
- */
+/* Clave pública ANON de Supabase, protegida por RLS. Nunca introducir service_role aquí. */
 window.VILLABLANCA_CLOUD_CONFIG = Object.freeze({
-  url: '',
-  publishableKey: ''
+  url: 'https://lnhptqaqtzilyaigyehq.supabase.co',
+  publishableKey: 'sb_publishable_sCug30CmaM06P8-v2IMZFw_R_bkRJhH'
 });
