@@ -314,7 +314,7 @@
       </section><aside><div class="payment-sticky">${quoteBox()}
         <div class="payment-total-line"><span>TOTAL ESTIMADO</span><strong>${format(q.known)}</strong></div>
         <button class="btn btn-primary full pay-action" data-action="payNow">${icon('lock',18)} Continuar al pago seguro ${icon('arrow',17)}</button>
-        <div class="support-note" style="margin-top:15px"><strong>Prueba completa de la aplicación</strong><p>Para mostrar cómo recibe una solicitud la empresa, confirma este pedido sin realizar ningún pago. Solo se guarda en este dispositivo.</p>
+        <div class="support-note" style="margin-top:15px"><strong>Prueba completa de la aplicación</strong><p>Para mostrar cómo recibe una solicitud la empresa, confirma este pedido sin realizar ningún pago. ${window.VILLABLANCA_CLOUD?.enabled?'Lo enviaremos a la base de datos de prueba para que aparezca en el panel de empresa, incluso en otro teléfono.':'Por ahora, se guardará solo en este dispositivo porque la conexión compartida no está configurada.'}</p>
         <button class="btn btn-outline full" data-action="demoCheckoutConfirm">Confirmar pedido de PRUEBA · sin pagar</button></div>
         <div class="payment-security">${icon('shield',16)} Sin cargos en esta demostración · Sin captura de tarjetas</div>
       </div></aside></div>
