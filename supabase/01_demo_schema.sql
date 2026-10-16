@@ -163,7 +163,7 @@ begin
     end if;
   end loop;
   v_id:=gen_random_uuid();
-  v_code:='VB-'+upper(substring(replace(v_id::text,'-',''),1,10));
+  v_code:='VB-' || upper(substring(replace(v_id::text,'-',''),1,10));
   insert into public.vb_demo_orders(id,display_code,client_reference,
      customer_name,phone,address,commune,service_date,slot,notes,estimated_total,payment_method)
   values(v_id,v_code,v_ref,trim(p_request->>'customer'),coalesce(p_request->>'phone',''),
