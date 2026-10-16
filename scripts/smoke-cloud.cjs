@@ -7,6 +7,8 @@ const sql=fs.readFileSync('supabase/01_demo_schema.sql','utf8');
 const html=fs.readFileSync('app/src/main/assets/index.html','utf8');
 assert.match(sql,/enable row level security/g);
 assert.match(sql,/create policy vb_orders_admin_read/i);
+assert.match(sql,/v_code\s*:=\s*'VB-'\s*\|\|\s*upper\(/i,'el código debe concatenarse con || en PostgreSQL');
+assert.doesNotMatch(sql,/v_code\s*:=\s*'VB-'\s*\+\s*upper\(/i,'no usar + para concatenar SQL');
 assert.match(sql,/grant execute on function public\.vb_submit_demo_order\(jsonb\) to anon,authenticated/i);
 assert.doesNotMatch(sql,/grant select on public\.vb_demo_orders to anon/i);
 assert.match(html,/No llegó el pedido al servidor/i);
