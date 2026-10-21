@@ -6,6 +6,7 @@ let state='login',error='',message='',tab='pedidos',weekOffset=0,snap={orders:[]
 const escape=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const money=n=>new Intl.NumberFormat('es-CL',{style:'currency',currency:'CLP',maximumFractionDigits:0}).format(Number(n)||0);
 const dates=s=>{const [y,m,d]=String(s||'').split('-');return [d,m,y].join('/')};
+const draftAssignments={};
 const statuses=['Recibido','Confirmado','Asignado','En camino','En servicio','Finalizado','Cancelado'];
 function banner(){return '<div class="adm-banner">PRUEBA CONECTADA · PEDIDOS COMPARTIDOS ENTRE DISPOSITIVOS · PAGOS SIMULADOS</div>';}
 function workerName(id){return snap.workers.find(w=>w.id===id)?.name||'Sin asignar';}
@@ -28,13 +29,13 @@ function orderView(o){
  const tasks=tasksFor(o),tr=transferFor(o.id);
  return '<article class="adm-order"><div class="adm-order-top"><b>'+escape(o.display_code)+'</b><small>'+dates(o.service_date)+' · '+escape(o.slot)+'</small></div>'+
  '<div class="adm-customer">'+escape(o.customer_name)+'</div><p>'+escape(o.address)+', '+escape(o.commune)+'<br>'+escape(o.phone)+'</p>'+
- (o.payment_method==='transfer'?'<div class="support-note"><strong>Transferencia · '+escape(tr?.decision||'Sin comprobante')+'</strong><p>Abono esperado: '+money(Math.round(Number(o.estimated_total||0)*.3))+'</p>'+(tr?'<button data-action="cloudViewTransfer" data-id="'+escape(o.id)+'">Ver / descargar comprobante</button> ':'')+(tr?.decision==='pendiente'?'<button data-action="cloudVerifyTransfer" data-id="'+escape(o.id)+'">Verifiqué ingreso en el banco</button> <button data-action="cloudRejectTransfer" data-id="'+escape(o.id)+'">Rechazar comprobante</button>':'')+(tr?.decision==='verificado'?'<p>Abono verificado. Ahora puedes asignar personal.</p><button data-action="cloudWhatsapp" data-id="'+escape(o.id)+'">Preparar WhatsApp de confirmación</button><button data-action="cloudBalance" data-id="'+escape(o.id)+'">'+(tr.collected?'Saldo registrado como cobrado':'Registrar saldo presencial cobrado')+'</button>':'')+'</div>':'')+
+ (o.payment_method==='transfer'?'<div class="support-note"><strong>Transferencia · '+escape(tr?.decision||'Sin comprobante')+'</strong><p>Abono esperado: '+money(Math.round(Number(o.estimated_total||0)*.3))+'</p>'+(tr?'<button data-action="cloudViewTransfer" data-id="'+escape(o.id)+'">Ver / descargar comprobante</button> ':'')+(tr?.decision==='pendiente'?'<button data-action="cloudVerifyTransfer" data-id="'+escape(o.id)+'">Verifiqué ingreso en el banco</button> <button data-action="cloudRejectTransfer" data-id="'+escape(o.id)+'">Rechazar comprobante</button>':'')+(tr?.decision==='verificado'?'<p>Abono verificado. Ahora puedes asignar personal.</p><button data-action="cloudWhatsapp" data-id="'+escape(o.id)+'">Preparar WhatsApp de confirmación</button><button data-action="cloudBalance" data-id="'+escape(o.id)+'">'+(tr.collected?'Saldo registrado como cobrado':'Registrar saldo cobrado por el encargado')+'</button>':'')+'</div>':'')+
  '<div class="adm-tasks">'+tasks.map(t=>'<div class="adm-task"><div class="adm-task-head"><b>'+escape(t.name)+' ×'+t.quantity+'</b>'+badge(t.status)+'</div>'+
  '<small>'+escape(t.duration_hours==null?'Duración por coordinar':t.duration_hours+' h')+' · '+escape(workerName(t.assigned_worker_id))+'</small>'+
  ((Array.isArray(t.extras)&&t.extras.length)?'<small>Extras: '+t.extras.map(e=>escape(e.name)+' ×'+escape(e.qty)).join(' · ')+'</small>':'')+
- '<div class="adm-task-controls"><label>Trabajadora<select data-cloud-worker="'+escape(t.id)+'"><option value="">Sin asignar</option>'+snap.workers.filter(w=>w.enabled).map(w=>'<option value="'+escape(w.id)+'" '+(w.id===t.assigned_worker_id?'selected':'')+'>'+escape(w.name)+' · '+escape(w.commune)+'</option>').join('')+'</select></label>'+
- '<label>Estado<select data-cloud-status="'+escape(t.id)+'">'+statuses.map(x=>'<option '+(x===t.status?'selected':'')+'>'+escape(x)+'</option>').join('')+'</select></label></div></div>').join('')+
- '</div><div class="adm-order-foot"><span>Total: '+money(o.estimated_total)+' · Abono 30%: '+money(Math.round(Number(o.estimated_total||0)*0.3))+' · Saldo presencial 70%: '+money(Number(o.estimated_total||0)-Math.round(Number(o.estimated_total||0)*0.3))+' · '+escape(o.payment_status)+'</span><button data-action="cloudReceipt" data-id="'+escape(o.id)+'">Comprobante de pedido</button></div><small>El comprobante de pedido no acredita una transferencia. Verifica el ingreso en tu banco antes de confirmar el abono y asignar personal.</small></article>';
+ '<div class="adm-task-controls"><label>Personal asignado<select data-cloud-worker="'+escape(t.id)+'" '+(o.payment_method==='transfer'&&tr?.decision!=='verificado'?'disabled title="Primero verifica el abono"':'')+'><option value="">Sin asignar</option>'+snap.workers.filter(w=>w.enabled).map(w=>'<option value="'+escape(w.id)+'" '+((draftAssignments[t.id]?.worker??t.assigned_worker_id)===w.id?'selected':'')+'>'+escape(w.name)+' · '+escape(w.commune)+'</option>').join('')+'</select></label>'+
+ '<label>Estado<select data-cloud-status="'+escape(t.id)+'">'+statuses.map(x=>'<option '+(x===t.status?'selected':'')+'>'+escape(x)+'</option>').join('')+'</select></label><button type="button" data-action="cloudSaveAssignment" data-id="'+escape(t.id)+'" '+(o.payment_method==='transfer'&&tr?.decision!=='verificado'?'disabled':'')+'>Guardar asignación</button>'+(o.payment_method==='transfer'&&tr?.decision!=='verificado'?'<small>Verifica primero el abono para habilitar la asignación.</small>':'')+'</div></div>').join('')+
+ '</div><div class="adm-order-foot"><span>Total: '+money(o.estimated_total)+' · Abono 30%: '+money(Math.round(Number(o.estimated_total||0)*0.3))+' · Saldo 70% a cobrar por un encargado: '+money(Number(o.estimated_total||0)-Math.round(Number(o.estimated_total||0)*0.3))+' · '+escape(o.payment_status)+'</span><button data-action="cloudReceipt" data-id="'+escape(o.id)+'">Comprobante de pedido</button></div><small>El comprobante de pedido no acredita una transferencia. Verifica el ingreso en tu banco antes de confirmar el abono y asignar personal.</small></article>';
 }
 function ordersView(){
  const visible=snap.orders.filter(o=>filter==='Todos'||tasksFor(o).some(t=>t.status===filter));
@@ -106,6 +107,13 @@ function handle(action,id,target,render){
  if(action==='cloudToday'){weekOffset=0;render();return {handled:true};}
  if(action==='cloudNext'){weekOffset++;render();return {handled:true};}
  if(action==='cloudExport'){try{file('Villablanca-Agenda-Demo.csv',csv(),'text/csv;charset=utf-8');render();}catch(e){setError(e);render();}return {handled:true};}
+ if(action==='cloudSaveAssignment'){
+   const t=snap.tasks.find(t=>t.id===id);if(!t)return {handled:true};
+   const worker=draftAssignments[id]?.worker??t.assigned_worker_id;
+   const status=worker?'Asignado':'Recibido';
+   (async()=>{try{await api.updateTask(id,worker,status);delete draftAssignments[id];message=worker?'Trabajador asignado correctamente.':'Asignación retirada.';await load(render);}catch(e){setError(e);render();}})();
+   return {handled:true};
+ }
  if(action==='cloudViewTransfer'){
    (async()=>{try{const r=await api.getTransferReceipt(id);if(!r)throw Error('Sin comprobante');const ext=r.mime==='application/pdf'?'pdf':r.mime==='image/png'?'png':'jpg';if(global.VillablancaAndroid?.saveDemoFile){global.VillablancaAndroid.saveDemoFile('Transferencia-'+id+'.'+ext,r.mime,r.base64);}else{const a=document.createElement('a');a.href='data:'+r.mime+';base64,'+r.base64;a.download='Transferencia-'+id+'.'+ext;document.body.appendChild(a);a.click();a.remove();}message='Comprobante descargado. Comprueba el ingreso desde tu banco antes de verificar.';render();}catch(e){setError(e);render();}})();return {handled:true};
  }
@@ -115,14 +123,14 @@ function handle(action,id,target,render){
    (async()=>{try{await api.verifyTransfer(id,decision);message='Abono: '+decision;await load(render);}catch(e){setError(e);render();}})();return {handled:true};
  }
  if(action==='cloudBalance'){
-   if(!confirm('¿El encargado ya recibió presencialmente el saldo del 70%?'))return {handled:true};
-   (async()=>{try{await api.setBalance(id,true);message='Cobro presencial registrado.';await load(render);}catch(e){setError(e);render();}})();return {handled:true};
+   if(!confirm('¿El encargado ya recibió el saldo del 70%?'))return {handled:true};
+   (async()=>{try{await api.setBalance(id,true);message='Cobro del encargado registrado.';await load(render);}catch(e){setError(e);render();}})();return {handled:true};
  }
  if(action==='cloudWhatsapp'){
    const o=snap.orders.find(x=>x.id===id);if(!o)return {handled:true};
    if(transferFor(id)?.decision!=='verificado'||tasksFor(o).some(t=>!t.assigned_worker_id)){message='Primero verifica el abono y asigna todo el personal.';render();return {handled:true};}
    const workers=[...new Set(tasksFor(o).map(t=>workerName(t.assigned_worker_id)))].join(', ');
-   const msg='Hola '+o.customer_name+', somos Servicios Villablanca. Tu abono fue verificado y tu servicio quedó agendado. Pedido: '+o.display_code+'. Fecha: '+dates(o.service_date)+'. Horario: '+o.slot+'. Personal asignado: '+workers+'. Saldo presencial pendiente: '+money(Number(o.estimated_total||0)-Math.round(Number(o.estimated_total||0)*.3))+'. Gracias por preferirnos.';
+   const msg='Hola '+o.customer_name+', somos Servicios Villablanca. Tu abono fue verificado y tu servicio quedó agendado. Pedido: '+o.display_code+'. Fecha: '+dates(o.service_date)+'. Horario: '+o.slot+'. Personal asignado: '+workers+'. Saldo pendiente a cobrar por un encargado: '+money(Number(o.estimated_total||0)-Math.round(Number(o.estimated_total||0)*.3))+'. Gracias por preferirnos.';
    const phone=String(o.phone||'').replace(/\D/g,'');if(!/^(?:56)?9\d{8}$/.test(phone)){setError('Teléfono no válido para WhatsApp.');render();return {handled:true};}
    global.open('https://wa.me/'+(phone.startsWith('56')?phone:'56'+phone)+'?text='+encodeURIComponent(msg),'_blank','noopener,noreferrer');
    message='WhatsApp abierto: revisa y pulsa Enviar manualmente.';render();return {handled:true};
@@ -148,24 +156,9 @@ function select(target,render){
  const taskId=target.dataset.cloudWorker||target.dataset.cloudStatus;
  if(!taskId)return {handled:false};
  const task=snap.tasks.find(x=>x.id===taskId);if(!task)return {handled:false};
- const worker=target.hasAttribute('data-cloud-worker')?target.value:task.assigned_worker_id;
- const status=target.hasAttribute('data-cloud-worker')?(worker?'Asignado':'Recibido'):target.value;
- (async()=>{
-   try{
-    await api.updateTask(taskId,worker,status);
-    message='Asignación y agenda actualizadas.';
-    if(worker){
-     try{
-      const result=await api.emailAssigned();
-      if(result?.sent>0)message+=' Se envió la ficha de presentación al correo del cliente.';
-      else message+=' El correo se enviará cuando estén asignadas todas las tareas del pedido.';
-     }catch(emailError){
-      message+=' Correo pendiente: '+String(emailError?.message||emailError).slice(0,120);
-     }
-    }
-    await load(render);
-   }catch(e){setError(e);render();}
-  })();
+ if(target.hasAttribute('data-cloud-worker')){draftAssignments[taskId]={worker:target.value};message='Seleccionado. Pulsa Guardar asignación para confirmar.';return {handled:true};}
+ const worker=draftAssignments[taskId]?.worker??task.assigned_worker_id;
+ (async()=>{try{await api.updateTask(taskId,worker,target.value);message='Estado actualizado.';await load(render);}catch(e){setError(e);render();}})();
  return {handled:true};
 }
 global.VILLABLANCA_LIVE={view:()=>'<div data-cloud-live-root>'+view()+'</div>',enter,leave,handle,select,getSnapshot:()=>snap};
