@@ -95,7 +95,7 @@ assert.equal(window.VillablancaTest.isWeekend('2030-10-19'),true,'sábado exclui
 assert.equal(window.VillablancaTest.isWeekend('2030-10-20'),true,'domingo excluido');
 change('client:day',day);
 assert.match(root.innerHTML,/Mañana · 08:00/);
-assert.doesNotMatch(root.innerHTML,/<option[^>]*>Tarde · 13:00<\/option>/,'6h no caben desde 13h');
+assert.doesNotMatch(root.innerHTML,/<option[^>]*>Tarde · 14:00<\/option>/,'6h no caben desde 14h');
 assert.match(root.innerHTML,/24 horas de anticipación/);
 click('catalog');
 click('selectService','auto-city');
