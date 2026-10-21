@@ -32,7 +32,7 @@ function orderView(o){
  ((Array.isArray(t.extras)&&t.extras.length)?'<small>Extras: '+t.extras.map(e=>escape(e.name)+' ×'+escape(e.qty)).join(' · ')+'</small>':'')+
  '<div class="adm-task-controls"><label>Trabajadora<select data-cloud-worker="'+escape(t.id)+'"><option value="">Sin asignar</option>'+snap.workers.filter(w=>w.enabled).map(w=>'<option value="'+escape(w.id)+'" '+(w.id===t.assigned_worker_id?'selected':'')+'>'+escape(w.name)+' · '+escape(w.commune)+'</option>').join('')+'</select></label>'+
  '<label>Estado<select data-cloud-status="'+escape(t.id)+'">'+statuses.map(x=>'<option '+(x===t.status?'selected':'')+'>'+escape(x)+'</option>').join('')+'</select></label></div></div>').join('')+
- '</div><div class="adm-order-foot"><span>'+money(o.estimated_total)+' · '+escape(o.payment_status)+'</span><button data-action="cloudReceipt" data-id="'+escape(o.id)+'">Comprobante de pedido</button></div></article>';
+ '</div><div class="adm-order-foot"><span>Total: '+money(o.estimated_total)+' · Abono 30%: '+money(Math.round(Number(o.estimated_total||0)*0.3))+' · Saldo presencial 70%: '+money(Number(o.estimated_total||0)-Math.round(Number(o.estimated_total||0)*0.3))+' · '+escape(o.payment_status)+'</span><button data-action="cloudReceipt" data-id="'+escape(o.id)+'">Comprobante de pedido</button></div><small>El comprobante de pedido no acredita una transferencia. Verifica el ingreso en tu banco antes de confirmar el abono y asignar personal.</small></article>';
 }
 function ordersView(){
  const visible=snap.orders.filter(o=>filter==='Todos'||tasksFor(o).some(t=>t.status===filter));
