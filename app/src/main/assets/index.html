@@ -220,7 +220,7 @@
   function priceInfo(s){
     if(isHourlyHome(s))return `<span class="price-ref">${format(s.price)}</span><span class="price-meta">por hora · mínimo ${s.minHours||4} horas</span>`;
     if(s.pricing==='referencia-sin-unidad')return `<span class="price-ref">${format(s.price)}</span><span class="price-meta">Tarifa publicada · aplicación a confirmar</span>`;
-    if(s.price==null)return `<span class="price-onrequest">${s.category==='tapices'?'Tarifa por unidad pendiente':'A cotizar'}</span>`;
+    if(s.price==null)return `<span class="price-onrequest">${s.category==='tapices'?'Precio por unidad pendiente de definición':'A cotizar'}</span>`;
     return `<span class="price-ref">${format(s.price)}</span><span class="price-meta">por ${s.category==='tapices'&&s.id.startsWith('alfombra-')?'servicio':'unidad'}</span>`;
   }
   function calcQuote(cart,client){
@@ -314,10 +314,10 @@
         <div class="pay-card visit-summary"><div class="pay-card-head">${icon('calendar',22)} <div><h2>Tu visita</h2><p>Los datos que revisaste antes del pago.</p></div></div><p><strong>${esc(a.day)}</strong> · ${esc(a.slot)}</p><p>${esc(a.address)}, ${esc(a.commune)}</p><p>${esc(a.name)} · ${esc(a.phone)}</p><small class="visit-notice">Horario sujeto a disponibilidad y confirmación del negocio. No se genera una reserva al pagar en esta demo.</small></div>
       </section><aside><div class="payment-sticky">${quoteBox()}
         <div class="payment-total-line"><span>TOTAL DEL SERVICIO</span><strong>${format(q.known)}</strong></div><div class="payment-total-line"><span>ABONO 30%</span><strong>${format(Math.round(q.known*0.3))}</strong></div><p class="payment-security">Saldo posterior: ${format(q.known-Math.round(q.known*0.3))} (70%).</p>
-        <button class="btn btn-primary full pay-action" data-action="payNow">${icon('lock',18)} Continuar al pago seguro ${icon('arrow',17)}</button>
+        <button class="btn btn-primary full pay-action" data-action="payNow">${icon('lock',18)} Abonar 30% con Mercado Pago ${icon('arrow',17)}</button>
         <div class="support-note" style="margin-top:15px"><strong>Prueba completa de la aplicación</strong><p>Para mostrar cómo recibe una solicitud la empresa, confirma este pedido sin realizar ningún pago. ${window.VILLABLANCA_CLOUD?.enabled?'Lo enviaremos a la base de datos de prueba para que aparezca en el panel de empresa, incluso en otro teléfono.':'Por ahora, se guardará solo en este dispositivo porque la conexión compartida no está configurada.'}</p>
         <button class="btn btn-outline full" data-action="demoCheckoutConfirm">Confirmar pedido de PRUEBA · sin pagar</button></div>
-        <div class="payment-security">${icon('shield',16)} Sin cargos en esta demostración · Sin captura de tarjetas</div>
+        <div class="payment-security">${icon('shield',16)} Los pedidos de PRUEBA no generan cobros. Mercado Pago solo procesará un abono cuando el comercio active su cuenta.</div>
       </div></aside></div>
       ${state.activationOpen?`<div class="activation-overlay" role="presentation"><div class="activation-dialog" role="dialog" aria-modal="true" aria-labelledby="activation-title" tabindex="-1"><span class="activation-status">${icon('lock',18)} ETAPA FINAL DE IMPLEMENTACIÓN</span><div class="activation-check">${icon('shield',33)}</div><h2 id="activation-title">Tu compra llegó hasta el pago.</h2><p>Este es el punto exacto donde la aplicación se conectará con la cuenta de <strong>Mercado Pago o Webpay del negocio</strong> cuando el proyecto esté aprobado.</p><div class="activation-row">${icon('check',17)} <span>Servicios, extras, dirección y total: listos.</span></div><div class="activation-row">${icon('check',17)} <span>Crédito, débito y transferencia: opciones de ejemplo.</span></div><div class="activation-row pending">${icon('lock',17)} <span>Pago real: pendiente de conectar las credenciales del comercio.</span></div><div class="activation-amount"><span>Pago que se procesaría</span><strong>${format(q.known)}</strong></div><small>En esta demo no se ingresan tarjetas, no se descuenta dinero y no se confirma ninguna reserva.</small><button class="btn btn-primary full" data-action="closePayment">Volver al checkout</button></div></div>`:''}
       </main>`;
@@ -495,7 +495,41 @@
     }
     if(action==='backReview'){state.activationOpen=false;state.view='review';render();return;}
     if(action==='choosePayment'){if(id==='credit'||id==='debit'||id==='transfer'){state.paymentMethod=id;render(false);}return;}
-    if(action==='payNow'){state.activationOpen=true;render(false);document.querySelector('.activation-dialog')?.focus();return;}
+    if(action==='payNow'){
+      if(state.view!=='checkout'||state.demoPending)return;
+      if(!window.VILLABLANCA_CLOUD?.enabled){state.activationOpen=true;render(false);return;}
+      if(!validateClient()){state.view='booking';render();return;}
+      const quote=calcQuote(state.cart,state.client);
+      if(!quote.allKnown||quote.travelPending)return;
+      const lines=state.cart.map(line=>{
+        const serv=getService(line.id);
+        const extras=getExtrasFor(serv).filter(e=>Number(line.extras?.[e.id]||0)>0)
+          .map(e=>({id:e.id,name:e.name,qty:Number(line.extras[e.id]),price:e.price}));
+        return {id:line.id,name:serv.name,category:serv.category,qty:line.qty,
+          durationHours:isHourlyHome(serv)?getTotalHomeHours(line):null,
+          baseHours:isHourlyHome(serv)?getHomeHours(line):null,details:line.details||{},extras,note:line.note||''};
+      });
+      const payload=state.demoPayload||{
+        customer:state.client.name,phone:state.client.phone,email:state.client.email,
+        address:state.client.address,commune:state.client.commune,date:state.client.day,
+        slot:state.client.slot,notes:state.client.notes,lines,total:quote.known,paymentMethod:state.paymentMethod
+      };
+      state.demoPayload=payload;state.demoPending=true;
+      (async()=>{
+        try{
+          const created=await window.VILLABLANCA_CLOUD.createOrder(payload);
+          const payment=await window.VILLABLANCA_CLOUD.beginDeposit(created.id,payload.clientReference);
+          state.demoPending=false;state.demoOrderId=created.code;state.demoRemote=true;
+          const url=payment.initPoint;
+          if(window.VillablancaAndroid?.openPayment)window.VillablancaAndroid.openPayment(url);
+          else window.location.assign(url);
+        }catch(error){
+          state.demoPending=false;
+          alert('El abono no se inició: '+error.message+' Tu tarjeta no ha sido cobrada. Puedes continuar con el pedido de prueba sin pagar.');
+        }
+      })();
+      return;
+    }
     if(action==='closePayment'){state.activationOpen=false;render(false);return;}
     if(action==='review'){if(!validateClient()){state.view='booking';render(false);const error=document.querySelector('.error');error?.scrollIntoView({block:'center',behavior:'smooth'});return;}state.view='review';render();return;}
     if(action==='backBooking'){state.view='booking';render();return;}
