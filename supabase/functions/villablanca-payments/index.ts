@@ -122,11 +122,12 @@ async function preference(req:Request){
   auto_return:'approved'
  })});
  const response=await mp.json().catch(()=>({}));
- if(!mp.ok||!response.id||!/^https:\/\/[^\s]+$/.test(response.init_point||''))return err('Mercado Pago no generó el enlace de pago',502);
+ const checkoutUrl=token().startsWith('TEST-')?response.sandbox_init_point:response.init_point;
+ if(!mp.ok||!response.id||!/^https:\/\/[^\s]+$/.test(checkoutUrl||''))return err('Mercado Pago no generó el enlace de pago',502);
  await db('vb_demo_orders?id=eq.'+id,{method:'PATCH',headers:{Prefer:'return=minimal'},body:JSON.stringify({
   deposit_amount:amount,mp_preference_id:response.id,payment_status:'Pendiente de abono'
  })});
- return json({initPoint:response.init_point,depositAmount:amount,totalAmount:total,remaining:total-amount,orderCode:o.display_code});
+ return json({initPoint:checkoutUrl,depositAmount:amount,totalAmount:total,remaining:total-amount,orderCode:o.display_code,testMode:token().startsWith('TEST-')});
 }
 async function notify(req:Request){
  if(!env('RESEND_API_KEY')||!env('VILLABLANCA_EMAIL_FROM'))return err('Servicio de correo aún no configurado (Resend y dominio verificado).',503);
