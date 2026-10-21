@@ -64,6 +64,20 @@ public final class MainActivity extends Activity {
                         runOnUiThread(() -> openExternalUrl(url));
                     }
                 }
+                @JavascriptInterface public void openPayment(String url) {
+                    if (url == null) return;
+                    try {
+                        Uri uri = Uri.parse(url);
+                        String host = uri.getHost();
+                        if ("https".equalsIgnoreCase(uri.getScheme()) &&
+                             ("www.mercadopago.cl".equalsIgnoreCase(host) ||
+                              "www.mercadopago.com".equalsIgnoreCase(host) ||
+                              "mercadopago.cl".equalsIgnoreCase(host) ||
+                              "mercadopago.com".equalsIgnoreCase(host))) {
+                            runOnUiThread(() -> openExternalUrl(url));
+                        }
+                    } catch (Exception ignored) { }
+                }
                 /** Solo permite exportar archivos locales .csv/.txt de la DEMO; no accede a datos bancarios. */
                 @JavascriptInterface public void saveDemoFile(String fileName, String mime, String base64) {
                     if (fileName == null || !fileName.matches("[A-Za-z0-9._-]{1,100}") ||
