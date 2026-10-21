@@ -62,7 +62,8 @@ begin
       < now() + interval '24 hours' then
     raise exception 'Debes reservar con 24 horas de anticipación';
   end if;
-  if nullif(trim(coalesce(p_request->>'email','')),'') is not null and (length(p_request->>'email')>254 or p_request->>'email' !~* '^[^ @]+@[^ @]+\.[^ @]+
+  if nullif(trim(coalesce(p_request->>'email','')),'') is not null and (length(p_request->>'email')>254 or p_request->>'email' !~* '^[^ @]+@[^ @]+\.[^ @]+$') then raise exception 'Correo de cliente no válido'; end if;
+  v_lines := p_request->'lines';
   if jsonb_typeof(v_lines) <> 'array' or jsonb_array_length(v_lines) not between 1 and 15 then
     raise exception 'Se requiere de 1 a 15 servicios';
   end if;
@@ -102,54 +103,6 @@ begin
     values(v_id,v_line->>'id',v_line->>'name',coalesce(v_line->>'category',''),
       (v_line->>'qty')::integer,v_line->'extras',
       nullif(v_line->>'durationHours','')::numeric, nullif(v_line->>'baseHours','')::numeric,coalesce(v_line->'details','{}'::jsonb));
-  end loop;
-  return jsonb_build_object('id',v_id,'code',v_code,'demo',true);
-exception when unique_violation then
-  select id,display_code into v_id,v_code from public.vb_demo_orders where client_reference=v_ref;
-  if found then return jsonb_build_object('id',v_id,'code',v_code,'demo',true); end if;
-  raise;
-end;
-$$;) then raise exception 'Correo de cliente no válido'; end if;
-  v_lines := p_request->'lines';
-  if jsonb_typeof(v_lines) <> 'array' or jsonb_array_length(v_lines) not between 1 and 15 then
-    raise exception 'Se requiere de 1 a 15 servicios';
-  end if;
-  if length(coalesce(p_request->>'paymentMethod','')) > 10 or
-     (p_request->>'paymentMethod') not in ('credit','debit','transfer','demo') then
-    raise exception 'Método de pago de prueba inválido';
-  end if;
-  if coalesce((p_request->>'total')::numeric,0) not between 0 and 20000000 then
-    raise exception 'Total fuera de rango';
-  end if;
-  for v_line in select value from jsonb_array_elements(v_lines)
-  loop
-    if length(trim(coalesce(v_line->>'name',''))) not between 3 and 150 or
-       length(trim(coalesce(v_line->>'id',''))) not between 2 and 80 or
-       coalesce((v_line->>'qty')::integer,0) not between 1 and 25 or
-       jsonb_typeof(v_line->'extras') <> 'array' or
-       jsonb_array_length(v_line->'extras') > 25 then
-       raise exception 'Servicio incompleto o inválido';
-    end if;
-    if v_line->>'durationHours' is not null then
-      v_duration := (v_line->>'durationHours')::numeric;
-      if v_duration <= 0 or v_duration > 10 or v_start+v_duration > 18 then
-        raise exception 'La duración de la jornada supera las 18:00';
-      end if;
-    end if;
-  end loop;
-  v_id:=gen_random_uuid();
-  v_code:='VB-' || upper(substring(replace(v_id::text,'-',''),1,10));
-  insert into public.vb_demo_orders(id,display_code,client_reference,
-     customer_name,phone,address,commune,service_date,slot,notes,estimated_total,payment_method)
-  values(v_id,v_code,v_ref,trim(p_request->>'customer'),coalesce(p_request->>'phone',''),
-   trim(p_request->>'address'),trim(p_request->>'commune'),v_day,v_slot,
-   coalesce(p_request->>'notes',''),(p_request->>'total')::integer,p_request->>'paymentMethod');
-  for v_line in select value from jsonb_array_elements(v_lines)
-  loop
-    insert into public.vb_demo_tasks(order_id,service_id,name,category,quantity,extras,duration_hours)
-    values(v_id,v_line->>'id',v_line->>'name',coalesce(v_line->>'category',''),
-      (v_line->>'qty')::integer,v_line->'extras',
-      nullif(v_line->>'durationHours','')::numeric);
   end loop;
   return jsonb_build_object('id',v_id,'code',v_code,'demo',true);
 exception when unique_violation then
