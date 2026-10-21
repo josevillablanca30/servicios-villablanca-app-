@@ -76,6 +76,12 @@
   return request('/rest/v1/rpc/vb_admin_add_worker',{method:'POST',token,body:{p_name:name,p_specialty:specialty,p_commune:commune}});
  }
  const payEndpoint=url.replace('.supabase.co','.functions.supabase.co')+'/villablanca-payments';
+ async function paymentStatus(){
+  if(!enabled)return {paymentsReady:false,emailReady:false};
+  const response=await fetch(payEndpoint+'/status',{method:'GET',headers:{apikey:key}});
+  if(!response.ok)throw Error('No se pudo verificar el estado de Mercado Pago.');
+  return response.json();
+ }
  async function beginDeposit(orderId,clientReference){
   if(!enabled)throw Error('La conexión a Supabase aún no está configurada.');
   const response=await fetch(payEndpoint+'/create',{method:'POST',headers:{'Content-Type':'application/json','apikey':key},body:JSON.stringify({orderId,clientReference})});
@@ -91,5 +97,5 @@
   if(!response.ok)throw Error(data.error||'Correo no enviado.');
   return data;
  }
- global.VILLABLANCA_CLOUD={enabled,signIn,signOut,createOrder,snapshot,updateTask,addWorker,beginDeposit,emailAssigned,hasSession:()=>Boolean(session()?.refreshToken)};
+ global.VILLABLANCA_CLOUD={enabled,signIn,signOut,createOrder,snapshot,updateTask,addWorker,paymentStatus,beginDeposit,emailAssigned,hasSession:()=>Boolean(session()?.refreshToken)};
 })(window);
