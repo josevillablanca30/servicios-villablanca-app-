@@ -18,6 +18,20 @@ const catalog=window.VILLABLANCA_CATALOG;
 const {calcQuote}=window.VillablancaTest;
 const order=(bedrooms,bathrooms,hours,extras={})=>[{id:'aseo-hogar',qty:1,details:{bedrooms:String(bedrooms),bathrooms:String(bathrooms),hours},extras}];
 const quoted=(lines)=>calcQuote(lines,{commune:'San Felipe'});
+const verifiedSofas=[['sofa-l',75000,22500],['sofa-3',50000,15000],['sofa-2',45000,13500],['sofa-1',38080,11424]];
+for(const [id,price,deposit] of verifiedSofas){
+ const service=catalog.services.find(x=>x.id===id);
+ assert.ok(service,'debe existir '+id);
+ assert.equal(service.price,price,id+' precio oficial publicado');
+ assert.equal(service.status,'publicado',id+' no debe permanecer a cotizar');
+ assert.equal(service.conflict,undefined,id+' debe eliminar lista de precios contradictorios');
+ const quote=quoted([{id,qty:1,details:{},extras:{}}]);
+ assert.equal(quote.known,price,id+' cobro por unidad');
+ assert.equal(quote.allKnown,true,id+' pasa al checkout sin cotización');
+ assert.equal(Math.round(quote.known*0.3),deposit,id+' abono 30% exacto');
+}
+assert.equal(quoted([{id:'sofa-3',qty:2,details:{},extras:{}}]).known,100000,'cantidad 2 cobra 2 unidades de sofá 3 cuerpos');
+
 assert.equal(quoted(order(2,1,4)).known,38080,'4 horas base');
 assert.equal(quoted(order(2,1,4,{planchado:1})).known,47600,'4+1 hora planchado mismo precio/h');
 const combined=[...order(2,1,4,{planchado:1}),{id:'auto-city',qty:1,details:{},extras:{}}];
