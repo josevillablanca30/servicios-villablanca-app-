@@ -73,7 +73,9 @@ public final class MainActivity extends Activity {
                              ("www.mercadopago.cl".equalsIgnoreCase(host) ||
                               "www.mercadopago.com".equalsIgnoreCase(host) ||
                               "mercadopago.cl".equalsIgnoreCase(host) ||
-                              "mercadopago.com".equalsIgnoreCase(host))) {
+                              "mercadopago.com".equalsIgnoreCase(host) ||
+                              "sandbox.mercadopago.cl".equalsIgnoreCase(host) ||
+                              "sandbox.mercadopago.com".equalsIgnoreCase(host))) {
                             runOnUiThread(() -> openExternalUrl(url));
                         }
                     } catch (Exception ignored) { }
