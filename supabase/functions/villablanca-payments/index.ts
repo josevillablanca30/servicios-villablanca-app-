@@ -101,7 +101,7 @@ async function mpWebhook(req:Request){
  return json({ok:true});
 }
 async function preference(req:Request){
- if(!token())return err('Mercado Pago aún no está conectado. Agrega MP_ACCESS_TOKEN a los secretos de Supabase.',503);
+ if(!token()||!env('MP_WEBHOOK_SECRET'))return err('Mercado Pago requiere credencial y firma de Webhooks configuradas antes de activar cobros.',503);
  const b=await req.json().catch(()=>({}));
  const id=String(b.orderId||''),ref=String(b.clientReference||'');
  if(!/^[0-9a-f-]{36}$/i.test(id)||!(/^[A-Za-z0-9-]{18,80}$/).test(ref))return err('Identificador inválido',400);
@@ -168,6 +168,7 @@ Deno.serve(async req=>{
   if(req.method==='GET'&&path.endsWith('/return')){
     return new Response('<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Servicios Villablanca</title><body style="font:16px system-ui;padding:40px;background:#231329;color:white"><h1>Gracias por visitar Mercado Pago</h1><p>El resultado definitivo del abono se verificará con Mercado Pago y aparecerá en el panel de Servicios Villablanca. Puedes volver a la aplicación.</p></body></html>',{headers:{'content-type':'text/html; charset=utf-8','cache-control':'no-store'}});
   }
+  if(req.method==='GET'&&path.endsWith('/status'))return json({paymentsReady:Boolean(token()&&env('MP_WEBHOOK_SECRET')),emailReady:Boolean(env('RESEND_API_KEY')&&env('VILLABLANCA_EMAIL_FROM'))});
   if(req.method==='POST'&&path.endsWith('/webhook'))return await mpWebhook(req);
   if(req.method==='POST'&&path.endsWith('/create'))return await preference(req);
   if(req.method==='POST'&&path.endsWith('/notify'))return await notify(req);
