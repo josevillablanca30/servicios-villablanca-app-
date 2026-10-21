@@ -97,5 +97,15 @@
   if(!response.ok)throw Error(data.error||'Correo no enviado.');
   return data;
  }
- global.VILLABLANCA_CLOUD={enabled,signIn,signOut,createOrder,snapshot,updateTask,addWorker,paymentStatus,beginDeposit,emailAssigned,hasSession:()=>Boolean(session()?.refreshToken)};
+ async function uploadTransfer(orderId,reference,file){
+   if(!enabled)throw Error('Conexión no disponible.');
+   if(!['image/jpeg','image/png','application/pdf'].includes(file.type)||file.size>2097152||file.size<100)throw Error('Sube un JPG, PNG o PDF de máximo 2 MB.');
+   const base64=await new Promise((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>resolve(String(reader.result).split(',')[1]);reader.onerror=()=>reject(Error('No se pudo abrir el archivo'));reader.readAsDataURL(file);});
+   return request('/rest/v1/rpc/vb_submit_transfer_receipt',{method:'POST',body:{p_order:orderId,p_reference:reference,p_mime:file.type,p_base64:base64}});
+ }
+ async function transferSummaries(){const token=await refreshSession();return request('/rest/v1/rpc/vb_admin_transfer_summaries',{method:'POST',token,body:{}});}
+ async function getTransferReceipt(id){const token=await refreshSession();return request('/rest/v1/rpc/vb_admin_transfer_receipt',{method:'POST',token,body:{p_order:id}});}
+ async function verifyTransfer(id,decision){const token=await refreshSession();return request('/rest/v1/rpc/vb_admin_verify_transfer',{method:'POST',token,body:{p_order:id,p_decision:decision}});}
+ async function setBalance(id,collected){const token=await refreshSession();return request('/rest/v1/rpc/vb_admin_set_balance',{method:'POST',token,body:{p_order:id,p_collected:collected}});}
+ global.VILLABLANCA_CLOUD={uploadTransfer,transferSummaries,getTransferReceipt,verifyTransfer,setBalance,enabled,signIn,signOut,createOrder,snapshot,updateTask,addWorker,paymentStatus,beginDeposit,emailAssigned,hasSession:()=>Boolean(session()?.refreshToken)};
 })(window);
