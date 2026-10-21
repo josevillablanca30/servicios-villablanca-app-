@@ -5,6 +5,12 @@ const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/st
 const client=fs.readFileSync('app/src/main/assets/cloud-api.js','utf8');
 const sql=fs.readFileSync('supabase/01_demo_schema.sql','utf8');
 const html=fs.readFileSync('app/src/main/assets/index.html','utf8');
+const edge=fs.readFileSync('supabase/functions/villablanca-payments/index.ts','utf8');
+for(const [id,price] of [['sofa-l',75000],['sofa-3',50000],['sofa-2',45000],['sofa-1',38080]]) {
+ assert.ok(edge.includes("'"+id+"':"+price),id+' tarifa debe existir en servidor, jamás confiar en precio del teléfono');
+}
+assert.match(edge,/Math\.round\(total\*\.3\)/,'abono calculado en servidor');
+
 assert.match(sql,/enable row level security/g);
 assert.match(sql,/create policy vb_orders_admin_read/i);
 assert.match(sql,/v_code\s*:=\s*'VB-'\s*\|\|\s*upper\(/i,'el código debe concatenarse con || en PostgreSQL');
