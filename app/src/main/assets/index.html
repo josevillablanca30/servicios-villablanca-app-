@@ -517,6 +517,8 @@
       state.demoPayload=payload;state.demoPending=true;
       (async()=>{
         try{
+          const check=await window.VILLABLANCA_CLOUD.paymentStatus();
+          if(!check.paymentsReady)throw Error('Mercado Pago todavía no está activado en la cuenta de la empresa.');
           const created=await window.VILLABLANCA_CLOUD.createOrder(payload);
           const payment=await window.VILLABLANCA_CLOUD.beginDeposit(created.id,payload.clientReference);
           state.demoPending=false;state.demoOrderId=created.code;state.demoRemote=true;
