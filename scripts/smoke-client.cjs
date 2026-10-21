@@ -73,7 +73,7 @@ change('draft:bathrooms','2');
 assert.match(root.innerHTML,/el mínimo es de 6 horas/);
 click('addCart');
 assert.match(root.innerHTML,/6 h por visita/);
-const after=Date.now()+3*86400000;
+const after=new Date(Date.now()+3*86400000);
 while([0,6].includes(after.getUTCDay()))after.setDate(after.getDate()+1);
 const day=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Santiago',year:'numeric',month:'2-digit',day:'2-digit'}).format(after);
 assert.equal(window.VillablancaTest.isWeekend(day),false,'día hábil permitido');
