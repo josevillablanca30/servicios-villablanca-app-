@@ -150,7 +150,7 @@
   if (!C) throw new Error('No se pudo cargar el catálogo.');
   const $root = document.getElementById('app');
   const state = {view:'home',filter:'all',query:'',draft:null,editIndex:null,cart:[],errors:{},
-    client:{name:'',phone:'',email:'',commune:'',address:'',detail:'',day:'',alternateDay:'',slot:'',notes:'',consent:false},paymentMethod:'credit',activationOpen:false, waUrl:'', demoOrderId:null,demoRemote:false,demoPending:false,demoPayload:null};
+    client:{name:'',phone:'',email:'',commune:'',address:'',detail:'',day:'',alternateDay:'',slot:'',notes:'',consent:false},paymentMethod:'transfer',activationOpen:false, waUrl:'', demoOrderId:null,demoRemote:false,demoPending:false,demoPayload:null};
   const iconPaths={
     home:'<path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1z"/>',
     sofa:'<path d="M4 11V8a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3v3M3 13a2 2 0 0 1 2-2h.5A2.5 2.5 0 0 1 8 13.5V15h8v-1.5a2.5 2.5 0 0 1 2.5-2.5H19a2 2 0 0 1 2 2v6H3zM5 19v2m14-2v2"/>',
@@ -304,18 +304,18 @@
       <h1 class="page-title">Abona el <em>30%.</em></h1>
       <p class="page-subtitle">Pagas únicamente el 30% para solicitar tu reserva. Nuestro equipo verifica el abono, confirma la disponibilidad y asigna al trabajador antes de dar por agendado el servicio. Un encargado cobrará presencialmente el 70% restante después de realizado el trabajo. Los pagos reales aún requieren activación; esta versión permite pruebas sin cobro.</p>
       <div class="pay-grid"><section>
-        <div class="pay-card"><div class="pay-card-head">${icon('shield',22)} <div><h2>Selecciona tu medio de pago</h2><p>Transacción protegida por un proveedor autorizado una vez activado.</p></div></div>
+        <div class="pay-card"><div class="pay-card-head">${icon('shield',22)} <div><h2>Abono por transferencia</h2><p>Mercado Pago se habilitará en una siguiente versión. Por ahora puedes registrar tu solicitud y adjuntar tu comprobante.</p></div></div>
           <div role="radiogroup" aria-label="Forma de pago">
-          <button class="pay-method ${method==='credit'?'selected':''}" role="radio" aria-checked="${method==='credit'}" data-action="choosePayment" data-id="credit"><span class="method-icon">${icon('credit-card',27)}</span><span class="method-copy"><strong>Tarjeta de crédito</strong><small>Compra en línea y cuotas según condiciones de tu banco y pasarela</small></span><span class="radio-dot"></span></button>
-          <button class="pay-method ${method==='debit'?'selected':''}" role="radio" aria-checked="${method==='debit'}" data-action="choosePayment" data-id="debit"><span class="method-icon">${icon('wallet',27)}</span><span class="method-copy"><strong>Tarjeta de débito</strong><small>Pago online desde tu cuenta bancaria</small></span><span class="radio-dot"></span></button>
+          <button style="display:none" class="pay-method ${method==='credit'?'selected':''}" role="radio" aria-checked="${method==='credit'}" data-action="choosePayment" data-id="credit"><span class="method-icon">${icon('credit-card',27)}</span><span class="method-copy"><strong>Tarjeta de crédito</strong><small>Compra en línea y cuotas según condiciones de tu banco y pasarela</small></span><span class="radio-dot"></span></button>
+          <button style="display:none" class="pay-method ${method==='debit'?'selected':''}" role="radio" aria-checked="${method==='debit'}" data-action="choosePayment" data-id="debit"><span class="method-icon">${icon('wallet',27)}</span><span class="method-copy"><strong>Tarjeta de débito</strong><small>Pago online desde tu cuenta bancaria</small></span><span class="radio-dot"></span></button>
           <button class="pay-method ${method==='transfer'?'selected':''}" role="radio" aria-checked="${method==='transfer'}" data-action="choosePayment" data-id="transfer"><span class="method-icon">${icon('wallet',27)}</span><span class="method-copy"><strong>Pago por transferencia</strong><small>Transferencia directa sin pasarela: mostraremos los datos bancarios y podrás adjuntar el comprobante. Un administrador verificará el ingreso en la cuenta antes de confirmar. Aún no está habilitado para pagos reales.</small></span><span class="radio-dot"></span></button>
           </div><div class="payment-guidance">${icon('shield',18)} Por tu seguridad, nunca ingreses datos de tarjeta en la aplicación. Cuando Mercado Pago esté activado, el abono se completará en su página segura.</div>
         </div>
         <div class="pay-card visit-summary"><div class="pay-card-head">${icon('calendar',22)} <div><h2>Tu visita</h2><p>Los datos que revisaste antes del pago.</p></div></div><p><strong>${esc(a.day)}</strong> · ${esc(a.slot)}</p><p>${esc(a.address)}, ${esc(a.commune)}</p><p>${esc(a.name)} · ${esc(a.phone)}</p><small class="visit-notice">Horario sujeto a disponibilidad y confirmación del negocio. No se genera una reserva al pagar en esta demo.</small></div>
       </section><aside><div class="payment-sticky">${quoteBox()}
         <div class="payment-total-line"><span>TOTAL DEL SERVICIO</span><strong>${format(q.known)}</strong></div><div class="payment-total-line"><span>ABONO 30%</span><strong>${format(Math.round(q.known*0.3))}</strong></div><p class="payment-security">Saldo a pagar presencialmente al encargado tras el servicio: ${format(q.known-Math.round(q.known*0.3))} (70%).</p>
-        ${method==='transfer'?`<div class="payment-guidance">${icon('info',18)} Transferencia con comprobante y validación manual: función pendiente de activación. No transfieras dinero aún.</div><button class="btn btn-primary full pay-action" type="button" disabled>Transferencia pendiente de activación</button>`:`<button class="btn btn-primary full pay-action" data-action="payNow">${icon('lock',18)} Abonar 30% con Mercado Pago ${icon('arrow',17)}</button>`}
-        <div class="support-note" style="margin-top:15px"><strong>Prueba completa de la aplicación</strong><p>Para mostrar cómo recibe una solicitud la empresa, confirma este pedido sin realizar ningún pago. ${window.VILLABLANCA_CLOUD?.enabled?'Lo enviaremos a la base de datos de prueba para que aparezca en el panel de empresa, incluso en otro teléfono.':'Por ahora, se guardará solo en este dispositivo porque la conexión compartida no está configurada.'}</p>
+        ${method==='transfer'?`<div class="payment-guidance">${icon('info',18)} El comprobante quedará privado para revisión del administrador. Hasta que se informen los datos bancarios oficiales, no transfieras dinero. Tu solicitud no se confirma automáticamente.</div><button class="btn btn-primary full pay-action" type="button" data-action="submitTransfer">Registrar solicitud y adjuntar comprobante</button>`:`<button class="btn btn-primary full pay-action" data-action="payNow">${icon('lock',18)} Abonar 30% con Mercado Pago ${icon('arrow',17)}</button>`}
+        <div class="support-note" style="margin-top:15px"><strong>Prueba sin transferir dinero</strong><p>Para mostrar cómo recibe una solicitud la empresa, confirma este pedido sin realizar ningún pago. ${window.VILLABLANCA_CLOUD?.enabled?'Lo enviaremos a la base de datos de prueba para que aparezca en el panel de empresa, incluso en otro teléfono.':'Por ahora, se guardará solo en este dispositivo porque la conexión compartida no está configurada.'}</p>
         <button class="btn btn-outline full" data-action="demoCheckoutConfirm">Confirmar pedido de PRUEBA · sin pagar</button></div>
         <div class="payment-security">${icon('shield',16)} Los pedidos de PRUEBA no generan cobros. Mercado Pago solo procesará un abono cuando el comercio active su cuenta.</div>
       </div></aside></div>
@@ -324,7 +324,7 @@
   }
   function footer(){return `<footer><div class="container footer-flex"><div class="footer-brand"><strong>servicios <b>VILLABLANCA</b></strong><span>Tu hogar, en las mejores manos.</span></div><div><a href="https://wa.me/56987729963" target="_blank" rel="noopener noreferrer">+56 9 8772 9963</a><a href="https://www.instagram.com/servicios.villablanca/" target="_blank" rel="noopener noreferrer">Instagram</a></div><small>Precios sujetos a confirmación. Las fechas seleccionadas no constituyen una reserva. <button type="button" data-action="demoAdmin" style="margin-left:12px;border:0;background:transparent;color:#d9b0df;text-decoration:underline;cursor:pointer">Panel empresa (demo)</button></small></div></footer>`}
   function confirmedDemo(){
-    return `<main id="content" class="container"><div class="adm-confirm"><span class="section-eyebrow">PEDIDO DE PRUEBA · SIN COBRO</span><h2>¡Tu solicitud fue recibida exitosamente!</h2><p><strong>Número: ${esc(state.demoOrderId||'Pedido DEMO')}</strong></p><p>${state.demoRemote?'Tu solicitud quedó registrada en la nube de la demostración y aparecerá en el otro teléfono al iniciar sesión como empresa.':'Esta solicitud quedó guardada solamente en este teléfono porque la conexión en la nube todavía no está configurada.'} No se cobró dinero, no hay reserva confirmada y no se emitió boleta.</p><p><strong>Gracias por preferirnos.</strong> Cuando el equipo de Administración termine de asignar a la funcionaria o funcionario a cargo, recibirás en tu correo la ficha de presentación antes de la fecha del servicio. La asignación y la confirmación de la agenda aún están pendientes.</p><p>Saluda,<br><strong>Equipo de Administración · Servicios Villablanca</strong></p><p><strong>Para probar la empresa:</strong> abre su panel aquí mismo y verás el pedido, las tareas y la asignación de trabajadoras. ${state.demoRemote?'Puedes revisar esta orden desde otro celular con la aplicación conectada y la cuenta de empresa autorizada.':'En modo local, los pedidos no se sincronizan entre celulares distintos.'}</p><div class="adm-actions"><button data-action="demoAdmin">Ver pedido en panel de empresa →</button><button data-action="demoNewClientOrder">Hacer otro pedido de prueba</button></div></div></main>`;
+    return `<main id="content" class="container"><div class="adm-confirm"><span class="section-eyebrow">PEDIDO DE PRUEBA · SIN COBRO</span><h2>¡Tu solicitud fue recibida exitosamente!</h2><p><strong>Número: ${esc(state.demoOrderId||'Pedido DEMO')}</strong></p>${state.transferOrderId?`<div class="support-note"><strong>Abono por transferencia · pendiente de verificación</strong><p>Adjunta tu comprobante JPG, PNG o PDF (máximo 2 MB). El comprobante no confirma por sí solo la transferencia; nuestro equipo revisará el ingreso bancario.</p>${state.transferUploaded?'<p>Comprobante enviado correctamente.</p>':'<label class="field">Adjuntar comprobante <input type="file" accept="image/jpeg,image/png,application/pdf" data-transfer-file></label>'}<p>Los datos bancarios oficiales deben ser comunicados por la empresa antes de efectuar cualquier transferencia. No deposites a cuentas que no hayas verificado.</p></div>`:''}<p>${state.demoRemote?'Tu solicitud quedó registrada en la nube de la demostración y aparecerá en el otro teléfono al iniciar sesión como empresa.':'Esta solicitud quedó guardada solamente en este teléfono porque la conexión en la nube todavía no está configurada.'} No se cobró dinero, no hay reserva confirmada y no se emitió boleta.</p><p><strong>Gracias por preferirnos.</strong> Cuando el equipo de Administración termine de asignar a la funcionaria o funcionario a cargo, recibirás en tu correo la ficha de presentación antes de la fecha del servicio. La asignación y la confirmación de la agenda aún están pendientes.</p><p>Saluda,<br><strong>Equipo de Administración · Servicios Villablanca</strong></p><p><strong>Para probar la empresa:</strong> abre su panel aquí mismo y verás el pedido, las tareas y la asignación de trabajadoras. ${state.demoRemote?'Puedes revisar esta orden desde otro celular con la aplicación conectada y la cuenta de empresa autorizada.':'En modo local, los pedidos no se sincronizan entre celulares distintos.'}</p><div class="adm-actions"><button data-action="demoAdmin">Ver pedido en panel de empresa →</button><button data-action="demoNewClientOrder">Hacer otro pedido de prueba</button></div></div></main>`;
   }
   function render(scroll=true){
     document.title=state.view==='admin'?'Servicios Villablanca | Centro de operaciones':'Servicios Villablanca | Servicios a domicilio';
@@ -438,7 +438,7 @@
       if(window.VILLABLANCA_CLOUD?.enabled){
         // Si falla la conexión, JAMÁS mostrar el pedido como recibido por la empresa.
         window.VILLABLANCA_CLOUD.createOrder(payload).then(result=>{
-          state.demoOrderId=result.code;state.demoRemote=true;state.demoPending=false;
+          state.demoOrderId=result.code;state.transferOrderId=result.id;state.demoRemote=true;state.demoPending=false;
           state.activationOpen=false;state.view='demoConfirmed';render();
         }).catch(error=>{
           state.demoPending=false;
@@ -495,6 +495,18 @@
     }
     if(action==='backReview'){state.activationOpen=false;state.view='review';render();return;}
     if(action==='choosePayment'){if(id==='credit'||id==='debit'||id==='transfer'){state.paymentMethod=id;render(false);}return;}
+    if(action==='submitTransfer'){
+      if(state.demoPending||state.view!=='checkout')return;
+      if(!window.VILLABLANCA_CLOUD?.enabled){alert('Se necesita conexión a internet para registrar una transferencia.');return;}
+      const q=calcQuote(state.cart,state.client);if(!q.allKnown||q.travelPending||!validateClient())return;
+      const lines=state.cart.map(line=>{const serv=getService(line.id);return {id:line.id,name:serv.name,category:serv.category,qty:line.qty,durationHours:isHourlyHome(serv)?getTotalHomeHours(line):null,details:line.details||{},extras:getExtrasFor(serv).filter(e=>Number(line.extras?.[e.id]||0)>0).map(e=>({id:e.id,name:e.name,qty:Number(line.extras[e.id]),price:e.price}))};});
+      const payload=state.demoPayload||{customer:state.client.name,phone:state.client.phone,email:state.client.email,address:state.client.address,commune:state.client.commune,date:state.client.day,slot:state.client.slot,notes:state.client.notes,lines,total:q.known,paymentMethod:'transfer'};
+      state.demoPayload=payload;state.demoPending=true;
+      window.VILLABLANCA_CLOUD.createOrder(payload).then(result=>{
+        state.demoOrderId=result.code;state.transferOrderId=result.id;state.demoRemote=true;state.demoPending=false;state.view='demoConfirmed';render();
+      }).catch(err=>{state.demoPending=false;alert('No se registró la solicitud: '+err.message);});
+      return;
+    }
     if(action==='payNow'){
       if(state.view!=='checkout'||state.demoPending)return;
       if(!window.VILLABLANCA_CLOUD?.enabled){state.activationOpen=true;render(false);return;}
@@ -546,6 +558,13 @@
       return;
     }
     if(action==='copyText'){copyText();return;}
+  });
+  $root.addEventListener('change',async e=>{
+    if(!e.target.matches('[data-transfer-file]'))return;
+    const file=e.target.files?.[0];
+    if(!file||!state.transferOrderId||!state.demoPayload?.clientReference)return;
+    try{await window.VILLABLANCA_CLOUD.uploadTransfer(state.transferOrderId,state.demoPayload.clientReference,file);alert('Comprobante recibido para revisión. Tu abono sigue pendiente hasta que administración confirme el ingreso en su banco.');state.transferUploaded=true;render(false);}
+    catch(err){alert('No se pudo adjuntar el comprobante: '+err.message);}
   });
   $root.addEventListener('input',e=>{
     const f=e.target.dataset.field;if(!f)return;
