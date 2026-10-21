@@ -12,6 +12,9 @@ assert.doesNotMatch(sql,/v_code\s*:=\s*'VB-'\s*\+\s*upper\(/i,'no usar + para co
 assert.match(sql,/grant execute on function public\.vb_submit_demo_order\(jsonb\) to anon,authenticated/i);
 assert.doesNotMatch(sql,/grant select on public\.vb_demo_orders to anon/i);
 assert.match(html,/No llegó el pedido al servidor/i);
+assert.match(html,/paymentStatus\(\)/,'cliente debe comprobar estado de Mercado Pago');
+assert.match(html,/Abonar 30% con Mercado Pago/,'mostrar botón de abono');
+assert.match(html,/Math\.round\(q\.known\*0\.3\)/,'abono de 30%');
 assert.match(html,/window\.VILLABLANCA_CLOUD\.createOrder\(payload\)/);
 const memory=new Map();
 const calls=[];
@@ -20,6 +23,7 @@ const reply=(data,code=200)=>({ok:code<400,status:code,async text(){return JSON.
 const fetch=async(u,req)=>{
  calls.push({url:u,req});
  if(failure)return reply({message:'Servidor no disponible'},503);
+ if(u.includes('/villablanca-payments/status'))return reply({paymentsReady:false,emailReady:false});
  if(u.includes('/auth/v1/token?grant_type=password'))return reply({
   access_token:'jwt-demo',refresh_token:'refresh-demo',expires_in:3600,user:{id:'00000000-0000-4000-a000-000000000001'}
  });
@@ -41,6 +45,7 @@ vm.createContext(ctx);new vm.Script(client).runInContext(ctx);
  const api=window.VILLABLANCA_CLOUD;
  assert.equal(api.enabled,true);
  const payload={customer:'Cliente ficticio',address:'Calle ficticia 12',commune:'San Felipe',date:'2026-10-20',slot:'Mañana · 08:00',lines:[{id:'aseo-hogar',name:'Aseo hogar',qty:1,extras:[],durationHours:5}],total:47600,paymentMethod:'debit'};
+ const status=await api.paymentStatus();assert.equal(status.paymentsReady,false,'sin credenciales no crear pagos reales');
  const created=await api.createOrder(payload);
  assert.equal(created.code,'VB-TEST');
  assert.ok(payload.clientReference.length>=18);
