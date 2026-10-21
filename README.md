@@ -5,7 +5,7 @@
 - Al asignar todas las tareas, Supabase agrega un aviso a `vb_demo_email_outbox`. La plantilla de correo contiene **«Tu servicio fue agendado exitosamente»** y la ficha del funcionario. **La entrega de correo real queda condicionada a configurar un proveedor de correo (Resend) y remitente verificado.**
 - Se registraron de forma privada en Supabase **17 nombres** de la nómina adjunta; no se añadieron RUT a los repositorios ni a la APK. Las especialidades y comunas quedan por validar.
 - El checkout calcula el **abono del 30% y saldo de 70%**. Hay función Edge desplegada para crear preferencia Mercado Pago Checkout Pro, abrir navegador externo y verificar webhooks firmados. **Por defecto NO procesa cargos**: requiere `MP_ACCESS_TOKEN` y `MP_WEBHOOK_SECRET` en Supabase Secrets. Todos los precios de cobro se recalculan desde una lista confiable en el servidor.
-- Las tarifas de sofá de 1, 2 y 3 cuerpos permanecen pendientes de definición por diferencias entre referencias. No se inventaron precios ni se habilitó su cobro.
+- **Tarifas de sofás confirmadas por imagen del cliente (21 de octubre de 2026):** tipo L **$75.000**, 3 cuerpos **$50.000**, 2 cuerpos **$45.000**, 1 cuerpo **$38.080**, todos por unidad. Se eliminaron conflictos anteriores y se habilita su cálculo en el checkout y en el motor del abono del 30% (si se activa Mercado Pago).
 - Activación segura y referencias: [supabase/MERCADO_PAGO_ACTIVACION.md](supabase/MERCADO_PAGO_ACTIVACION.md).
 
 # Servicios Villablanca — App cliente Android · demo comercial
