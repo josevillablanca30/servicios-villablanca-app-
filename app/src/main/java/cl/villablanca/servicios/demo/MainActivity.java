@@ -15,6 +15,7 @@ import android.widget.Toast;
 import java.io.OutputStream;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebChromeClient;
+import android.webkit.ValueCallback;
 import android.webkit.WebResourceError;
 import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
@@ -34,6 +35,8 @@ public final class MainActivity extends Activity {
     private static final int BACKGROUND = Color.rgb(11, 8, 15);
     private FrameLayout root;
     private WebView webView;
+    private ValueCallback<Uri[]> pendingFileChooser;
+    private static final int FILE_CHOOSER_REQUEST = 403;
     private WebViewAssetLoader assetLoader;
 
     @Override protected void onCreate(Bundle savedInstanceState) {
@@ -83,9 +86,9 @@ public final class MainActivity extends Activity {
                 /** Solo permite exportar archivos locales .csv/.txt de la DEMO; no accede a datos bancarios. */
                 @JavascriptInterface public void saveDemoFile(String fileName, String mime, String base64) {
                     if (fileName == null || !fileName.matches("[A-Za-z0-9._-]{1,100}") ||
-                        !(fileName.endsWith(".csv") || fileName.endsWith(".txt")) ||
+                        !(fileName.endsWith(".csv") || fileName.endsWith(".txt") || fileName.endsWith(".pdf") || fileName.endsWith(".png") || fileName.endsWith(".jpg")) ||
                         base64 == null || base64.length() > 5000000) return;
-                    if (!("text/csv;charset=utf-8".equals(mime) || "text/plain;charset=utf-8".equals(mime))) return;
+                    if (!("text/csv;charset=utf-8".equals(mime) || "text/plain;charset=utf-8".equals(mime) || "application/pdf".equals(mime) || "image/png".equals(mime) || "image/jpeg".equals(mime))) return;
                     try {
                         final byte[] bytes = Base64.decode(base64, Base64.DEFAULT);
                         if (bytes.length > 3000000) return;
@@ -93,7 +96,25 @@ public final class MainActivity extends Activity {
                     } catch (IllegalArgumentException ignored) { }
                 }
             }, "VillablancaAndroid");
-            webView.setWebChromeClient(new WebChromeClient());
+            webView.setWebChromeClient(new WebChromeClient() {
+                @Override public boolean onShowFileChooser(WebView view, ValueCallback<Uri[]> callback, FileChooserParams params) {
+                    if (pendingFileChooser != null) pendingFileChooser.onReceiveValue(null);
+                    pendingFileChooser = callback;
+                    try {
+                        Intent select = new Intent(Intent.ACTION_GET_CONTENT);
+                        select.addCategory(Intent.CATEGORY_OPENABLE);
+                        select.setType("*/*");
+                        select.putExtra(Intent.EXTRA_MIME_TYPES, new String[]{"image/jpeg","image/png","application/pdf"});
+                        startActivityForResult(Intent.createChooser(select,"Seleccionar comprobante"), FILE_CHOOSER_REQUEST);
+                        return true;
+                    } catch (Exception e) {
+                        pendingFileChooser = null;
+                        callback.onReceiveValue(null);
+                        Toast.makeText(MainActivity.this,"No hay una aplicación para seleccionar archivos",Toast.LENGTH_LONG).show();
+                        return false;
+                    }
+                }
+            });
             webView.setWebViewClient(new WebViewClient() {
                 @Override public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
                     return assetLoader.shouldInterceptRequest(request.getUrl());
@@ -128,6 +149,15 @@ public final class MainActivity extends Activity {
             showError("No fue posible iniciar la aplicación. Actualiza Android System WebView e inténtalo nuevamente.");
         }
     }
+    @Override protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == FILE_CHOOSER_REQUEST && pendingFileChooser != null) {
+            Uri[] result = resultCode == RESULT_OK && data != null && data.getData() != null
+                ? new Uri[]{data.getData()} : null;
+            pendingFileChooser.onReceiveValue(result);
+            pendingFileChooser = null;
+        }
+    }
     private void saveCsvOrReceipt(String fileName, String mime, byte[] bytes) {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
             Toast.makeText(this, "Para exportar en Android 9 o anterior, usa la versión web.", Toast.LENGTH_LONG).show();
@@ -137,7 +167,7 @@ public final class MainActivity extends Activity {
         try {
             ContentValues values = new ContentValues();
             values.put(MediaStore.Downloads.DISPLAY_NAME, fileName);
-            values.put(MediaStore.Downloads.MIME_TYPE, mime.startsWith("text/csv") ? "text/csv" : "text/plain");
+            values.put(MediaStore.Downloads.MIME_TYPE, mime.startsWith("text/csv") ? "text/csv" : mime);
             values.put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
             uri = getContentResolver().insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
             if (uri == null) throw new IllegalStateException("Descarga no disponible");
