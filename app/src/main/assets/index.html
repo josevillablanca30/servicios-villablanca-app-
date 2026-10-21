@@ -213,7 +213,8 @@
   const startChileMs=(day,hour)=>{const ref=new Date(`${day}T15:00:00Z`);const z=new Intl.DateTimeFormat('en',{timeZone:'America/Santiago',timeZoneName:'shortOffset'}).formatToParts(ref).find(x=>x.type==='timeZoneName')?.value||'GMT-3';const m=z.match(/GMT([+-]\d{1,2})(?::(\d{2}))?/);const minutes=m?(Number(m[1])*60+(Number(m[1])<0?-1:1)*Number(m[2]||0)):-180;return Date.parse(`${day}T${String(hour).padStart(2,'0')}:00:00Z`)-minutes*60000;};
   const minBookingDay=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/Santiago',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(Date.now()+86400000));
   const slotStartHour=slot=>slot?.startsWith('Mañana')?8:slot?.startsWith('Tarde')?13:null;
-  const availableSlots=()=>{const day=state.client.day||minBookingDay(),duration=getTotalScheduledHours(state.cart),quote=isQuoteVisit();return [8,13].filter(h=>(quote||!duration||h+duration<=18)&&startChileMs(day,h)-Date.now()>=86400000).map(h=>h===8?'Mañana · 08:00':'Tarde · 13:00');};
+  const isWeekend=day=>{if(!/^\d{4}-\d{2}-\d{2}$/.test(day||''))return false;const weekday=new Date(day+'T12:00:00Z').getUTCDay();return weekday===0||weekday===6;};
+  const availableSlots=()=>{const day=state.client.day||minBookingDay(),duration=getTotalScheduledHours(state.cart),quote=isQuoteVisit();if(isWeekend(day))return [];return [8,13].filter(h=>(quote||!duration||h+duration<=18)&&startChileMs(day,h)-Date.now()>=86400000).map(h=>h===8?'Mañana · 08:00':'Tarde · 13:00');};
   const getBaseLineTotal=line=>{const s=getService(line.id);if(!s)return 0;if(isHourlyHome(s))return (s.price||0)*getHomeHours(line)*Math.max(1,Number(line.qty||1)||1);if(s.price==null)return null;return s.price*Math.max(1,Number(line.qty||1)||1);};
   const lineBaseLabel=line=>{const s=getService(line.id);if(!s)return 'Por definir';if(isHourlyHome(s))return `${format(s.price)} × ${getHomeHours(line)} h × ${Math.max(1,Number(line.qty||1)||1)} visita(s)`;if(s.price==null)return 'Por definir';return format(s.price*Math.max(1,Number(line.qty||1)));};
   function priceInfo(s){
@@ -300,19 +301,19 @@
     return `<main id="content" class="container payment-page">${topStep()}
       <button class="back-link" data-action="backReview">${icon('back',17)} Volver a revisar mi compra</button>
       <div class="section-eyebrow">PASO FINAL · PAGO SEGURO</div>
-      <h1 class="page-title">Es momento de <em>pagar.</em></h1>
-      <p class="page-subtitle">Ya configuraste el servicio, los extras y tu visita. Elige cómo quieres pagar. Esta demostración termina justo antes de conectarse con el proveedor de pagos.</p>
+      <h1 class="page-title">Abona el <em>30%.</em></h1>
+      <p class="page-subtitle">Tu abono será el 30% del valor total; el 70% restante queda pendiente. El pago real se habilitará cuando terminemos de conectar Mercado Pago. La prueba sin cobro sigue disponible.</p>
       <div class="pay-grid"><section>
         <div class="pay-card"><div class="pay-card-head">${icon('shield',22)} <div><h2>Selecciona tu medio de pago</h2><p>Transacción protegida por un proveedor autorizado una vez activado.</p></div></div>
           <div role="radiogroup" aria-label="Forma de pago">
           <button class="pay-method ${method==='credit'?'selected':''}" role="radio" aria-checked="${method==='credit'}" data-action="choosePayment" data-id="credit"><span class="method-icon">${icon('credit-card',27)}</span><span class="method-copy"><strong>Tarjeta de crédito</strong><small>Compra en línea y cuotas según condiciones de tu banco y pasarela</small></span><span class="radio-dot"></span></button>
           <button class="pay-method ${method==='debit'?'selected':''}" role="radio" aria-checked="${method==='debit'}" data-action="choosePayment" data-id="debit"><span class="method-icon">${icon('wallet',27)}</span><span class="method-copy"><strong>Tarjeta de débito</strong><small>Pago online desde tu cuenta bancaria</small></span><span class="radio-dot"></span></button>
           <button class="pay-method ${method==='transfer'?'selected':''}" role="radio" aria-checked="${method==='transfer'}" data-action="choosePayment" data-id="transfer"><span class="method-icon">${icon('wallet',27)}</span><span class="method-copy"><strong>Pago por transferencia</strong><small>Se habilitarán los datos bancarios de la empresa tras activar el comercio; en esta demo no transfieras dinero.</small></span><span class="radio-dot"></span></button>
-          </div><div class="payment-guidance">${icon('shield',18)} Nunca ingreses los datos de tu tarjeta en esta demo. En la versión activa pagarás dentro del entorno seguro de Mercado Pago o Webpay.</div>
+          </div><div class="payment-guidance">${icon('shield',18)} Por tu seguridad, nunca ingreses datos de tarjeta en la aplicación. Cuando Mercado Pago esté activado, el abono se completará en su página segura.</div>
         </div>
         <div class="pay-card visit-summary"><div class="pay-card-head">${icon('calendar',22)} <div><h2>Tu visita</h2><p>Los datos que revisaste antes del pago.</p></div></div><p><strong>${esc(a.day)}</strong> · ${esc(a.slot)}</p><p>${esc(a.address)}, ${esc(a.commune)}</p><p>${esc(a.name)} · ${esc(a.phone)}</p><small class="visit-notice">Horario sujeto a disponibilidad y confirmación del negocio. No se genera una reserva al pagar en esta demo.</small></div>
       </section><aside><div class="payment-sticky">${quoteBox()}
-        <div class="payment-total-line"><span>TOTAL ESTIMADO</span><strong>${format(q.known)}</strong></div>
+        <div class="payment-total-line"><span>TOTAL DEL SERVICIO</span><strong>${format(q.known)}</strong></div><div class="payment-total-line"><span>ABONO 30%</span><strong>${format(Math.round(q.known*0.3))}</strong></div><p class="payment-security">Saldo posterior: ${format(q.known-Math.round(q.known*0.3))} (70%).</p>
         <button class="btn btn-primary full pay-action" data-action="payNow">${icon('lock',18)} Continuar al pago seguro ${icon('arrow',17)}</button>
         <div class="support-note" style="margin-top:15px"><strong>Prueba completa de la aplicación</strong><p>Para mostrar cómo recibe una solicitud la empresa, confirma este pedido sin realizar ningún pago. ${window.VILLABLANCA_CLOUD?.enabled?'Lo enviaremos a la base de datos de prueba para que aparezca en el panel de empresa, incluso en otro teléfono.':'Por ahora, se guardará solo en este dispositivo porque la conexión compartida no está configurada.'}</p>
         <button class="btn btn-outline full" data-action="demoCheckoutConfirm">Confirmar pedido de PRUEBA · sin pagar</button></div>
@@ -323,7 +324,7 @@
   }
   function footer(){return `<footer><div class="container footer-flex"><div class="footer-brand"><strong>servicios <b>VILLABLANCA</b></strong><span>Tu hogar, en las mejores manos.</span></div><div><a href="https://wa.me/56987729963" target="_blank" rel="noopener noreferrer">+56 9 8772 9963</a><a href="https://www.instagram.com/servicios.villablanca/" target="_blank" rel="noopener noreferrer">Instagram</a></div><small>Precios sujetos a confirmación. Las fechas seleccionadas no constituyen una reserva. <button type="button" data-action="demoAdmin" style="margin-left:12px;border:0;background:transparent;color:#d9b0df;text-decoration:underline;cursor:pointer">Panel empresa (demo)</button></small></div></footer>`}
   function confirmedDemo(){
-    return `<main id="content" class="container"><div class="adm-confirm"><span class="section-eyebrow">PEDIDO DE PRUEBA · SIN COBRO</span><h2>¡Pedido de demostración registrado!</h2><p><strong>Número: ${esc(state.demoOrderId||'Pedido DEMO')}</strong></p><p>${state.demoRemote?'Tu solicitud quedó registrada en la nube de la demostración y aparecerá en el otro teléfono al iniciar sesión como empresa.':'Esta solicitud quedó guardada solamente en este teléfono porque la conexión en la nube todavía no está configurada.'} No se cobró dinero, no hay reserva confirmada y no se emitió boleta.</p><p><strong>Para probar la empresa:</strong> abre su panel aquí mismo y verás el pedido, las tareas y la asignación de trabajadoras. ${state.demoRemote?'Puedes revisar esta orden desde otro celular con la aplicación conectada y la cuenta de empresa autorizada.':'En modo local, los pedidos no se sincronizan entre celulares distintos.'}</p><div class="adm-actions"><button data-action="demoAdmin">Ver pedido en panel de empresa →</button><button data-action="demoNewClientOrder">Hacer otro pedido de prueba</button></div></div></main>`;
+    return `<main id="content" class="container"><div class="adm-confirm"><span class="section-eyebrow">PEDIDO DE PRUEBA · SIN COBRO</span><h2>¡Tu solicitud fue recibida exitosamente!</h2><p><strong>Número: ${esc(state.demoOrderId||'Pedido DEMO')}</strong></p><p>${state.demoRemote?'Tu solicitud quedó registrada en la nube de la demostración y aparecerá en el otro teléfono al iniciar sesión como empresa.':'Esta solicitud quedó guardada solamente en este teléfono porque la conexión en la nube todavía no está configurada.'} No se cobró dinero, no hay reserva confirmada y no se emitió boleta.</p><p><strong>Gracias por preferirnos.</strong> Cuando el equipo de Administración termine de asignar a la funcionaria o funcionario a cargo, recibirás en tu correo la ficha de presentación antes de la fecha del servicio. La asignación y la confirmación de la agenda aún están pendientes.</p><p>Saluda,<br><strong>Equipo de Administración · Servicios Villablanca</strong></p><p><strong>Para probar la empresa:</strong> abre su panel aquí mismo y verás el pedido, las tareas y la asignación de trabajadoras. ${state.demoRemote?'Puedes revisar esta orden desde otro celular con la aplicación conectada y la cuenta de empresa autorizada.':'En modo local, los pedidos no se sincronizan entre celulares distintos.'}</p><div class="adm-actions"><button data-action="demoAdmin">Ver pedido en panel de empresa →</button><button data-action="demoNewClientOrder">Hacer otro pedido de prueba</button></div></div></main>`;
   }
   function render(scroll=true){
     document.title=state.view==='admin'?'Servicios Villablanca | Centro de operaciones':'Servicios Villablanca | Servicios a domicilio';
@@ -357,15 +358,17 @@
     if(!isWorkshopOnly()){if(!a.commune)e.commune='Selecciona tu comuna.';if(a.address.trim().length<5)e.address='Ingresa calle y número.';}
     const start=slotStartHour(a.slot),duration=getTotalScheduledHours(state.cart);
     if(!a.day||a.day<minBookingDay())e.day='Las solicitudes requieren al menos 24 horas de anticipación.';
+    if(a.day&&isWeekend(a.day))e.day='Atendemos de lunes a viernes. Elige un día hábil.';
     if(a.day&&start!=null&&startChileMs(a.day,start)-Date.now()<86400000)e.day='Este bloque tiene menos de 24 horas de anticipación. Elige una fecha posterior.';
-    if(a.alternateDay&&(a.alternateDay<minBookingDay()||a.alternateDay===a.day))e.alternateDay='Elige una fecha posterior y diferente a la principal.';
+    if(a.alternateDay&&(a.alternateDay<minBookingDay()||a.alternateDay===a.day||isWeekend(a.alternateDay)))e.alternateDay='Selecciona otro día hábil, distinto de la fecha principal.';
     if(!a.slot)e.slot='Selecciona un bloque horario disponible.';
     else if(!availableSlots().includes(a.slot))e.slot='Este horario no está disponible según la duración o las 24 horas mínimas.';
     if(duration>10)e.slot='La suma de horas supera el horario de 08:00 a 18:00. Divide tu solicitud.';
     if(a.name.trim().length<3)e.name='Ingresa tu nombre y apellido.';
     const normalized=a.phone.replace(/[^0-9]/g,'');
     if(!/^(?:56)?9\d{8}$/.test(normalized))e.phone='Usa un celular chileno válido: 9 1234 5678.';
-    if(a.email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(a.email))e.email='Revisa el formato de tu correo.';
+    if(!a.email&&!isQuoteVisit())e.email='Ingresa tu correo: allí enviaremos la ficha de la persona asignada.';
+    else if(a.email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(a.email))e.email='Revisa el formato de tu correo.';
     state.errors=e;return Object.keys(e).length===0;
   }
     function requestText(){
@@ -421,13 +424,13 @@
       const lines=state.cart.map(line=>{
         const serv=getService(line.id);
         const extras=getExtrasFor(serv).filter(e=>Number(line.extras?.[e.id]||0)>0)
-          .map(e=>({name:e.name,qty:Number(line.extras[e.id]),price:e.price}));
+          .map(e=>({id:e.id,name:e.name,qty:Number(line.extras[e.id]),price:e.price}));
         return {id:line.id,name:serv.name,category:serv.category,qty:line.qty,
-          durationHours:isHourlyHome(serv)?getTotalHomeHours(line):null,extras,note:line.note||''};
+          durationHours:isHourlyHome(serv)?getTotalHomeHours(line):null,baseHours:isHourlyHome(serv)?getHomeHours(line):null,details:line.details||{},extras,note:line.note||''};
       });
       if(state.demoPending)return;
       const payload=state.demoPayload||{
-        customer:state.client.name,phone:state.client.phone,address:state.client.address,
+        customer:state.client.name,phone:state.client.phone,email:state.client.email,address:state.client.address,
         commune:state.client.commune,date:state.client.day,slot:state.client.slot,
         notes:state.client.notes,lines,total:estimate.known,paymentMethod:state.paymentMethod
       };
@@ -529,7 +532,7 @@
   }
   render();
   // Exponer exclusivamente cálculos sin datos personales para pruebas automatizadas.
-  window.VillablancaTest = {calcQuote,requestText,appointmentKind,scheduledHours:getTotalScheduledHours,parallelVehicleCount:getParallelVehicleCount,validPhone:p=>/^(?:56)?9\d{8}$/.test(p.replace(/[^0-9]/g,'')),todayChile};
+  window.VillablancaTest = {calcQuote,requestText,appointmentKind,isWeekend,scheduledHours:getTotalScheduledHours,parallelVehicleCount:getParallelVehicleCount,validPhone:p=>/^(?:56)?9\d{8}$/.test(p.replace(/[^0-9]/g,'')),todayChile};
 })();
 
 </script>
