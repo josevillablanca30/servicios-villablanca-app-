@@ -75,5 +75,21 @@
   const token=await refreshSession();
   return request('/rest/v1/rpc/vb_admin_add_worker',{method:'POST',token,body:{p_name:name,p_specialty:specialty,p_commune:commune}});
  }
- global.VILLABLANCA_CLOUD={enabled,signIn,signOut,createOrder,snapshot,updateTask,addWorker,hasSession:()=>Boolean(session()?.refreshToken)};
+ const payEndpoint=url.replace('.supabase.co','.functions.supabase.co')+'/villablanca-payments';
+ async function beginDeposit(orderId,clientReference){
+  if(!enabled)throw Error('La conexión a Supabase aún no está configurada.');
+  const response=await fetch(payEndpoint+'/create',{method:'POST',headers:{'Content-Type':'application/json','apikey':key},body:JSON.stringify({orderId,clientReference})});
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok)throw Error(data.error||'Mercado Pago todavía no está disponible.');
+  if(!/^https:\/\//.test(data.initPoint||''))throw Error('Enlace de pago inválido.');
+  return data;
+ }
+ async function emailAssigned(){
+  const jwt=await refreshSession();
+  const response=await fetch(payEndpoint+'/notify',{method:'POST',headers:{Authorization:'Bearer '+jwt,apikey:key,'Content-Type':'application/json'},body:'{}'});
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok)throw Error(data.error||'Correo no enviado.');
+  return data;
+ }
+ global.VILLABLANCA_CLOUD={enabled,signIn,signOut,createOrder,snapshot,updateTask,addWorker,beginDeposit,emailAssigned,hasSession:()=>Boolean(session()?.refreshToken)};
 })(window);
