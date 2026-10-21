@@ -2,7 +2,7 @@
 (function(global){
 'use strict';
 const api=global.VILLABLANCA_CLOUD;
-let state='login',error='',message='',tab='pedidos',weekOffset=0,snap={orders:[],tasks:[],workers:[]},timer=null,refreshing=false,filter='Todos';
+let state='login',error='',message='',tab='pedidos',weekOffset=0,snap={orders:[],tasks:[],workers:[]},timer=null,refreshing=false,filter='Todos',transfers=[];
 const escape=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const money=n=>new Intl.NumberFormat('es-CL',{style:'currency',currency:'CLP',maximumFractionDigits:0}).format(Number(n)||0);
 const dates=s=>{const [y,m,d]=String(s||'').split('-');return [d,m,y].join('/')};
@@ -23,10 +23,12 @@ function days(){
  const now=new Date();now.setHours(12,0,0,0);now.setDate(now.getDate()-(now.getDay()+6)%7+7*weekOffset);
  return Array.from({length:7},(_,i)=>{const d=new Date(now);d.setDate(now.getDate()+i);return [d.getFullYear(),String(d.getMonth()+1).padStart(2,'0'),String(d.getDate()).padStart(2,'0')].join('-')});
 }
+function transferFor(id){return transfers.find(t=>t.order_id===id);}
 function orderView(o){
- const tasks=tasksFor(o);
+ const tasks=tasksFor(o),tr=transferFor(o.id);
  return '<article class="adm-order"><div class="adm-order-top"><b>'+escape(o.display_code)+'</b><small>'+dates(o.service_date)+' · '+escape(o.slot)+'</small></div>'+
  '<div class="adm-customer">'+escape(o.customer_name)+'</div><p>'+escape(o.address)+', '+escape(o.commune)+'<br>'+escape(o.phone)+'</p>'+
+ (o.payment_method==='transfer'?'<div class="support-note"><strong>Transferencia · '+escape(tr?.decision||'Sin comprobante')+'</strong><p>Abono esperado: '+money(Math.round(Number(o.estimated_total||0)*.3))+'</p>'+(tr?'<button data-action="cloudViewTransfer" data-id="'+escape(o.id)+'">Ver / descargar comprobante</button> ':'')+(tr?.decision==='pendiente'?'<button data-action="cloudVerifyTransfer" data-id="'+escape(o.id)+'">Verifiqué ingreso en el banco</button> <button data-action="cloudRejectTransfer" data-id="'+escape(o.id)+'">Rechazar comprobante</button>':'')+(tr?.decision==='verificado'?'<p>Abono verificado. Ahora puedes asignar personal.</p><button data-action="cloudWhatsapp" data-id="'+escape(o.id)+'">Preparar WhatsApp de confirmación</button><button data-action="cloudBalance" data-id="'+escape(o.id)+'">'+(tr.collected?'Saldo registrado como cobrado':'Registrar saldo presencial cobrado')+'</button>':'')+'</div>':'')+
  '<div class="adm-tasks">'+tasks.map(t=>'<div class="adm-task"><div class="adm-task-head"><b>'+escape(t.name)+' ×'+t.quantity+'</b>'+badge(t.status)+'</div>'+
  '<small>'+escape(t.duration_hours==null?'Duración por coordinar':t.duration_hours+' h')+' · '+escape(workerName(t.assigned_worker_id))+'</small>'+
  ((Array.isArray(t.extras)&&t.extras.length)?'<small>Extras: '+t.extras.map(e=>escape(e.name)+' ×'+escape(e.qty)).join(' · ')+'</small>':'')+
@@ -68,7 +70,7 @@ function view(){if(!api?.enabled)return '<main>Falta activar Supabase.</main>';i
 function setError(e){error=String(e?.message||e||'No se pudo completar la operación').slice(0,220);message='';}
 async function load(render){
  if(refreshing)return;refreshing=true;
- try{snap=await api.snapshot();state='ready';error='';}
+ try{snap=await api.snapshot();transfers=await api.transferSummaries();state='ready';error='';}
  catch(e){setError(e);state='error';}
  finally{refreshing=false;if(render)render();}
 }
@@ -104,6 +106,27 @@ function handle(action,id,target,render){
  if(action==='cloudToday'){weekOffset=0;render();return {handled:true};}
  if(action==='cloudNext'){weekOffset++;render();return {handled:true};}
  if(action==='cloudExport'){try{file('Villablanca-Agenda-Demo.csv',csv(),'text/csv;charset=utf-8');render();}catch(e){setError(e);render();}return {handled:true};}
+ if(action==='cloudViewTransfer'){
+   (async()=>{try{const r=await api.getTransferReceipt(id);if(!r)throw Error('Sin comprobante');const ext=r.mime==='application/pdf'?'pdf':r.mime==='image/png'?'png':'jpg';if(global.VillablancaAndroid?.saveDemoFile){global.VillablancaAndroid.saveDemoFile('Transferencia-'+id+'.'+ext,r.mime,r.base64);}else{const a=document.createElement('a');a.href='data:'+r.mime+';base64,'+r.base64;a.download='Transferencia-'+id+'.'+ext;document.body.appendChild(a);a.click();a.remove();}message='Comprobante descargado. Comprueba el ingreso desde tu banco antes de verificar.';render();}catch(e){setError(e);render();}})();return {handled:true};
+ }
+ if(action==='cloudVerifyTransfer'||action==='cloudRejectTransfer'){
+   const decision=action==='cloudVerifyTransfer'?'verificado':'rechazado';
+   if(!confirm(decision==='verificado'?'¿Ya comprobaste en el banco que el dinero ingresó efectivamente?':'¿Rechazar este comprobante?'))return {handled:true};
+   (async()=>{try{await api.verifyTransfer(id,decision);message='Abono: '+decision;await load(render);}catch(e){setError(e);render();}})();return {handled:true};
+ }
+ if(action==='cloudBalance'){
+   if(!confirm('¿El encargado ya recibió presencialmente el saldo del 70%?'))return {handled:true};
+   (async()=>{try{await api.setBalance(id,true);message='Cobro presencial registrado.';await load(render);}catch(e){setError(e);render();}})();return {handled:true};
+ }
+ if(action==='cloudWhatsapp'){
+   const o=snap.orders.find(x=>x.id===id);if(!o)return {handled:true};
+   if(transferFor(id)?.decision!=='verificado'||tasksFor(o).some(t=>!t.assigned_worker_id)){message='Primero verifica el abono y asigna todo el personal.';render();return {handled:true};}
+   const workers=[...new Set(tasksFor(o).map(t=>workerName(t.assigned_worker_id)))].join(', ');
+   const msg='Hola '+o.customer_name+', somos Servicios Villablanca. Tu abono fue verificado y tu servicio quedó agendado. Pedido: '+o.display_code+'. Fecha: '+dates(o.service_date)+'. Horario: '+o.slot+'. Personal asignado: '+workers+'. Saldo presencial pendiente: '+money(Number(o.estimated_total||0)-Math.round(Number(o.estimated_total||0)*.3))+'. Gracias por preferirnos.';
+   const phone=String(o.phone||'').replace(/\D/g,'');if(!/^(?:56)?9\d{8}$/.test(phone)){setError('Teléfono no válido para WhatsApp.');render();return {handled:true};}
+   global.open('https://wa.me/'+(phone.startsWith('56')?phone:'56'+phone)+'?text='+encodeURIComponent(msg),'_blank','noopener,noreferrer');
+   message='WhatsApp abierto: revisa y pulsa Enviar manualmente.';render();return {handled:true};
+ }
  if(action==='cloudReceipt'){try{receipt(id);render();}catch(e){setError(e);render();}return {handled:true};}
  if(action==='cloudReload'){state='loading';load(render);render();return {handled:true};}
  if(action==='cloudLogin'){
