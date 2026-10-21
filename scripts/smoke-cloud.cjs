@@ -19,7 +19,7 @@ assert.match(html,/window\.VILLABLANCA_CLOUD\.createOrder\(payload\)/);
 const memory=new Map();
 const calls=[];
 let failure=false,unauthorized=false;
-const reply=(data,code=200)=>({ok:code<400,status:code,async text(){return JSON.stringify(data)}});
+const reply=(data,code=200)=>({ok:code<400,status:code,async text(){return JSON.stringify(data)},async json(){return data}});
 const fetch=async(u,req)=>{
  calls.push({url:u,req});
  if(failure)return reply({message:'Servidor no disponible'},503);
