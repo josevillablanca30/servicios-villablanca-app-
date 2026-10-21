@@ -127,7 +127,22 @@ function select(target,render){
  const task=snap.tasks.find(x=>x.id===taskId);if(!task)return {handled:false};
  const worker=target.hasAttribute('data-cloud-worker')?target.value:task.assigned_worker_id;
  const status=target.hasAttribute('data-cloud-worker')?(worker?'Asignado':'Recibido'):target.value;
- (async()=>{try{await api.updateTask(taskId,worker,status);message='Asignación y agenda actualizadas.';await load(render);}catch(e){setError(e);render();}})();
+ (async()=>{
+   try{
+    await api.updateTask(taskId,worker,status);
+    message='Asignación y agenda actualizadas.';
+    if(worker){
+     try{
+      const result=await api.emailAssigned();
+      if(result?.sent>0)message+=' Se envió la ficha de presentación al correo del cliente.';
+      else message+=' El correo se enviará cuando estén asignadas todas las tareas del pedido.';
+     }catch(emailError){
+      message+=' Correo pendiente: '+String(emailError?.message||emailError).slice(0,120);
+     }
+    }
+    await load(render);
+   }catch(e){setError(e);render();}
+  })();
  return {handled:true};
 }
 global.VILLABLANCA_LIVE={view:()=>'<div data-cloud-live-root>'+view()+'</div>',enter,leave,handle,select,getSnapshot:()=>snap};
