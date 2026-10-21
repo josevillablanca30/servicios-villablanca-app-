@@ -1,3 +1,13 @@
+## Candidata Android — transferencias (21 octubre 2026)
+
+- **Mercado Pago desactivado desde checkout** para esta candidata; la opción seleccionada es transferencia.
+- El cliente puede solicitar el servicio, ver el abono del 30%, registrar pedido en Supabase y adjuntar JPG/PNG/PDF de máximo 2 MB, almacenado como binario en tabla privada bajo controles de acceso (no visible públicamente).
+- Solo el administrador autenticado puede descargar el comprobante y marcar verificado o rechazado tras consultar el ingreso en el banco. Una regla de la base de datos impide asignar trabajadores a pedidos por transferencia hasta verificar el abono.
+- Después de asignar a todo el personal, el panel puede abrir WhatsApp con el mensaje de confirmación preparado. El envío sigue siendo manual para evitar costo de API.
+- El encargado cobra el 70% presencialmente y puede registrar ese saldo en el panel.
+- **No habilitar transferencias reales aún:** falta ingresar los datos bancarios aprobados de la empresa. Nunca inventar cuenta o titular. Tampoco se ha verificado aún una instalación y prueba completa en Android después de este cambio. La compilación automática de GitHub Actions genera `Villablanca-APK-Instalable` cuando pasa sus validaciones.
+- La carga de comprobantes por RPC está pensada para la candidata y debe revisarse contra abusos/rate limits antes de una operación comercial de alto volumen.
+
 ## Actualización 21 de octubre — reserva, correo, abono y nómina
 
 - Fechas del cliente: **lunes a viernes**, con validación tanto en cliente como en RPC Supabase; se preservan los bloques horarios existentes sin añadir los del Word.
