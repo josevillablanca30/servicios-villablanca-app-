@@ -15,7 +15,7 @@ async function db(path:string,opts:RequestInit={}):Promise<any>{
  const body=await resp.text();return body?JSON.parse(body):null;
 }
 const unit:Record<string,number>={
- 'sofa-l':75000,'poltrona':25000,'sitial':20000,'silla-respaldo':6500,'silla-simple':5000,
+ 'sofa-l':75000,'sofa-3':50000,'sofa-2':45000,'sofa-1':38080,'poltrona':25000,'sitial':20000,'silla-respaldo':6500,'silla-simple':5000,
  'respaldo-pequeno':25000,'respaldo-grande':35000,'colchon-pequeno':38080,'colchon-grande':47600,
  'alfombra-1':47600,'alfombra-2':71400,'alfombra-3':89250,
  'auto-city':25000,'auto-suv':30000,'tapiz-auto-2':40000,'tapiz-auto-3':60000
