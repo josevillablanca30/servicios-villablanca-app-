@@ -1,3 +1,13 @@
+## Actualización 21 de octubre — reserva, correo, abono y nómina
+
+- Fechas del cliente: **lunes a viernes**, con validación tanto en cliente como en RPC Supabase; se preservan los bloques horarios existentes sin añadir los del Word.
+- El correo del cliente es obligatorio en reservas con precio y se guarda en `vb_demo_orders.customer_email`. Al confirmar una solicitud, la pantalla avisa que la asignación del funcionario y la fecha definitiva siguen pendientes.
+- Al asignar todas las tareas, Supabase agrega un aviso a `vb_demo_email_outbox`. La plantilla de correo contiene **«Tu servicio fue agendado exitosamente»** y la ficha del funcionario. **La entrega de correo real queda condicionada a configurar un proveedor de correo (Resend) y remitente verificado.**
+- Se registraron de forma privada en Supabase **17 nombres** de la nómina adjunta; no se añadieron RUT a los repositorios ni a la APK. Las especialidades y comunas quedan por validar.
+- El checkout calcula el **abono del 30% y saldo de 70%**. Hay función Edge desplegada para crear preferencia Mercado Pago Checkout Pro, abrir navegador externo y verificar webhooks firmados. **Por defecto NO procesa cargos**: requiere `MP_ACCESS_TOKEN` y `MP_WEBHOOK_SECRET` en Supabase Secrets. Todos los precios de cobro se recalculan desde una lista confiable en el servidor.
+- Las tarifas de sofá de 1, 2 y 3 cuerpos permanecen pendientes de definición por diferencias entre referencias. No se inventaron precios ni se habilitó su cobro.
+- Activación segura y referencias: [supabase/MERCADO_PAGO_ACTIVACION.md](supabase/MERCADO_PAGO_ACTIVACION.md).
+
 # Servicios Villablanca — App cliente Android · demo comercial
 
 Repositorio principal de la aplicación **Servicios Villablanca**. App Android nativa contenedora del catálogo y flujo de contratación web local incluidos en `app/src/main/assets/index.html`. GitHub es la fuente única de este desarrollo; no depende de Lovable.
