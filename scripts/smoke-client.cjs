@@ -32,6 +32,22 @@ for(const [id,price,deposit] of verifiedSofas){
 }
 assert.equal(quoted([{id:'sofa-3',qty:2,details:{},extras:{}}]).known,100000,'cantidad 2 cobra 2 unidades de sofá 3 cuerpos');
 
+const maintenanceReferences=[
+ ['armado-mueble-basico',25000],['armado-mueble-grande',45000],
+ ['instalacion-roller',15000],['cambio-chapa',20000],
+ ['instalacion-decoracion',15000]
+];
+for(const [id,minimum] of maintenanceReferences){
+ const service=catalog.services.find(s=>s.id===id);
+ assert.ok(service,id+' existe en el catálogo');
+ assert.equal(service.referencePrice,minimum,id+' precio desde correcto');
+ assert.equal(service.price,null,id+' NO debe cobrarse como precio fijo');
+ assert.equal(service.pricing,'desde',id+' referencia sujeta a evaluación');
+ const quote=quoted([{id,qty:1,details:{},extras:{}}]);
+ assert.equal(quote.allKnown,false,id+' debe ir a cotización y no cobrar abono automático');
+}
+
+
 assert.equal(quoted(order(2,1,4)).known,38080,'4 horas base');
 assert.equal(quoted(order(2,1,4,{planchado:1})).known,47600,'4+1 hora planchado mismo precio/h');
 const combined=[...order(2,1,4,{planchado:1}),{id:'auto-city',qty:1,details:{},extras:{}}];
