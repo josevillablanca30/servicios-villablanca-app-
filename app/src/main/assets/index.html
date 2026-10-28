@@ -108,6 +108,11 @@
   item('jardin-pasto','jardineria','Corte de pasto y mantención',null,{proposed:true}),
   item('jardin-desmalezar','jardineria','Desmalezado y limpieza de jardín',null,{proposed:true}),
   item('jardin-poda','jardineria','Poda y orden de áreas verdes',null,{proposed:true}),
+  item('armado-mueble-basico','mantenimiento','Armado de mueble básico (velador o escritorio pequeño)',null,{referencePrice:25000,pricing:'desde',description:'Precio desde 25.000 CLP, referencial y sujeto a cotización según condiciones del trabajo.'}),
+  item('armado-mueble-grande','mantenimiento','Armado de mueble grande (clóset o cómoda de 6 cajones)',null,{referencePrice:45000,pricing:'desde',description:'Precio desde 45.000 CLP, referencial y sujeto a cotización según condiciones del trabajo.'}),
+  item('instalacion-roller','mantenimiento','Instalación de roller (mínimo 2 unidades)',null,{referencePrice:15000,pricing:'desde',description:'Precio desde 15.000 CLP, referencial y sujeto a cotización según condiciones del trabajo. Mínimo 2 unidades.'}),
+  item('cambio-chapa','mantenimiento','Cambio de chapa',null,{referencePrice:20000,pricing:'desde',description:'Precio desde 20.000 CLP, referencial y sujeto a cotización según condiciones del trabajo.'}),
+  item('instalacion-decoracion','mantenimiento','Instalación de lámpara, repisa o cuadro',null,{referencePrice:15000,pricing:'desde',description:'Precio desde 15.000 CLP, referencial y sujeto a cotización según condiciones del trabajo.'}),
   item('mante-visita','mantenimiento','Visita técnica de mantenimiento',null,{proposed:true}),
   item('mante-reparacion','mantenimiento','Reparaciones menores del hogar',null,{proposed:true}),
   item('bebe-coche','especializada','Limpieza de coche de bebé',null,{fulfillment:'taller'}),
@@ -225,6 +230,7 @@
   function priceInfo(s){
     if(isHourlyHome(s))return `<span class="price-ref">${format(s.price)}</span><span class="price-meta">por hora · mínimo ${s.minHours||4} horas</span>`;
     if(s.pricing==='referencia-sin-unidad')return `<span class="price-ref">${format(s.price)}</span><span class="price-meta">Tarifa publicada · aplicación a confirmar</span>`;
+    if(s.pricing==='desde')return `<span class="price-ref">Desde ${format(s.referencePrice)}</span><span class="price-meta">Precio referencial · sujeto a cotización</span>`;
     if(s.price==null)return `<span class="price-onrequest">${s.category==='tapices'?'Precio por unidad pendiente de definición':'A cotizar'}</span>`;
     return `<span class="price-ref">${format(s.price)}</span><span class="price-meta">por ${s.category==='tapices'&&s.id.startsWith('alfombra-')?'servicio':'unidad'}</span>`;
   }
