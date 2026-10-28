@@ -37,9 +37,12 @@ d.inp('client:address','Calle de prueba 123');
 d.inp('client:name','María Ejemplo');
 d.inp('client:email','cliente-prueba@example.com');
 d.inp('client:phone','912345678');
-const future=new Date();future.setDate(future.getDate()+5);
-while([0,6].includes(future.getUTCDay()))future.setDate(future.getDate()+1);
-const date=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Santiago',year:'numeric',month:'2-digit',day:'2-digit'}).format(future);
+const future=new Date(Date.now()+6*86400000);
+let date=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Santiago',year:'numeric',month:'2-digit',day:'2-digit'}).format(future);
+while(d.window.VillablancaTest.isWeekend(date)||['2026-10-31','2026-11-01','2026-12-08','2026-12-25'].includes(date)){
+ const [y,m,dd]=date.split('-').map(Number);
+ date=new Date(Date.UTC(y,m-1,dd+1,12)).toISOString().slice(0,10);
+}
 d.change('client:day',date);
 d.change('client:slot','Mañana · 08:00');
 d.click('review');
