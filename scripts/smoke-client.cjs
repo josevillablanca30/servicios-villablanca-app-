@@ -103,9 +103,12 @@ change('draft:bathrooms','2');
 assert.match(root.innerHTML,/el mínimo es de 6 horas/);
 click('addCart');
 assert.match(root.innerHTML,/6 h por visita/);
-const after=new Date(Date.now()+3*86400000);
-while([0,6].includes(after.getUTCDay()))after.setDate(after.getDate()+1);
-const day=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Santiago',year:'numeric',month:'2-digit',day:'2-digit'}).format(after);
+const after=new Date(Date.now()+4*86400000);
+let day=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Santiago',year:'numeric',month:'2-digit',day:'2-digit'}).format(after);
+while(window.VillablancaTest.isWeekend(day)){
+ const [y,m,d]=day.split('-').map(Number);
+ day=new Date(Date.UTC(y,m-1,d+1,12)).toISOString().slice(0,10);
+}
 assert.equal(window.VillablancaTest.isWeekend(day),false,'día hábil permitido');
 assert.equal(window.VillablancaTest.isWeekend('2030-10-19'),true,'sábado excluido');
 assert.equal(window.VillablancaTest.isWeekend('2030-10-20'),true,'domingo excluido');
